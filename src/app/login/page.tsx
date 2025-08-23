@@ -8,11 +8,24 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+
+    // Client-side Validation
+    if (!email || !password) {
+      setError("Both email and password are required.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
       const response = await fetch("/api/auth/login", {
@@ -26,15 +39,17 @@ export default function Login() {
       const data = await response.json();
 
       if (response.ok) {
-        // Successful login, redirect to a dashboard or home page
-        // We'll build the dashboard in a later step
-        console.log(data); // In a real app, you would handle the user data or token here
-        router.push("/"); // Redirect to the main page for now
+        // Store the JWT token in localStorage
+        localStorage.setItem("token", data.token);
+        // Redirect to the dashboard or homepage
+        router.push("/");
       } else {
         setError(data.message || "Login failed");
       }
     } catch (err) {
       setError("An error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -80,9 +95,10 @@ export default function Login() {
           </div>
           <button
             type="submit"
-            className="w-full rounded-lg bg-blue-500 py-2 font-bold text-white transition duration-200 hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300"
+            disabled={isLoading}
+            className="w-full rounded-lg bg-blue-500 py-2 font-bold text-white transition duration-200 hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300 disabled:opacity-50"
           >
-            Login
+            {isLoading ? "Logging in..." : "Login"}
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-600">

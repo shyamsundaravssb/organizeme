@@ -2,43 +2,48 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/db/dbConnect";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
-export async function POST(requset: Request) {
+export async function POST(request: Request) {
   await dbConnect();
 
   try {
-    const { email, password } = await requset.json();
+    const { email, password } = await request.json();
 
-    // Find the user by email
+    // 1. Basic Input Validation
+    if (!email || !password) {
+      return NextResponse.json(
+        { message: "Email and password are required." },
+        { status: 400 }
+      );
+    }
 
+    // 2. Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
       return NextResponse.json(
-        {
-          message: "Invalid Credentials",
-        },
-        {
-          status: 401,
-        }
+        { message: "Invalid credentials" },
+        { status: 401 }
       );
     }
 
-    // compare the provided password with the stored hashed password
-
+    // 3. Compare the provided password with the stored hashed password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return NextResponse.json(
-        {
-          message: "Invalid Credentials",
-        },
-        {
-          status: 401,
-        }
+        { message: "Invalid credentials" },
+        { status: 401 }
       );
     }
 
-    // Return success message for now (we will add jwt token in a later step)
+    // 4. Create a JWT token
+    const token = jwt.sign(
+      { userId: user._id, username: user.username, email: user.email },
+      process.env.JWT_SECRET!,
+      { expiresIn: "1h" } // Token expires in 1 hour
+    );
 
+    // 5. Return the token and user data
     return NextResponse.json(
       {
         message: "Logged in successfully",
@@ -46,20 +51,14 @@ export async function POST(requset: Request) {
           name: user.name,
           username: user.username,
         },
+        token,
       },
-      {
-        status: 201,
-      }
+      { status: 200 }
     );
   } catch (error: any) {
     return NextResponse.json(
-      {
-        message: "Error logging in",
-        error: error.message,
-      },
-      {
-        status: 500,
-      }
+      { message: "Error logging in", error: error.message },
+      { status: 500 }
     );
   }
 }
