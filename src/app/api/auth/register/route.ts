@@ -2,12 +2,22 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/db/dbConnect";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
+import nodemailer from "nodemailer";
 
 // Helper function to check for valid username format
 const isValidUsername = (username: string) => {
   const usernameRegex = /^[a-z0-9_.]+$/;
   return usernameRegex.test(username);
 };
+
+// Nodemailer Transporter
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 export async function POST(request: Request) {
   await dbConnect();
@@ -48,23 +58,27 @@ export async function POST(request: Request) {
 
     const sanitizedUsername = username.toLowerCase();
 
-    // 4. Check for existing email
-    const userExists = await User.findOne({ email });
+    // 4. Check for existing email and username
+    const userExists = await User.findOne({
+      $or: [{ email }, { username: sanitizedUsername }],
+    });
     if (userExists) {
-      return NextResponse.json(
-        { message: "User with this email already exists." },
-        { status: 409 }
-      );
+      if (userExists.email === email) {
+        return NextResponse.json(
+          { message: "User with this email already exists." },
+          { status: 409 }
+        );
+      } else {
+        return NextResponse.json(
+          { message: "This username is already taken." },
+          { status: 409 }
+        );
+      }
     }
 
-    // 5. Check for existing username (case-insensitive)
-    const usernameExists = await User.findOne({ username: sanitizedUsername });
-    if (usernameExists) {
-      return NextResponse.json(
-        { message: "This username is already taken." },
-        { status: 409 }
-      );
-    }
+    // 5. Generate and store OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 15 * 60 * 1000); // OTP expires in 15 minutes
 
     // 6. Hash the password and create the new user
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -73,14 +87,30 @@ export async function POST(request: Request) {
       username: sanitizedUsername,
       email,
       password: hashedPassword,
+      otp,
+      otpExpires,
     });
     await user.save();
 
+    // 7. Send the verification email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "OrganizeMe: Email Verification",
+      text: `Your OTP for OrganizeMe is ${otp}. It will expire in 15 minutes.`,
+      html: `<p>Your OTP for OrganizeMe is <strong>${otp}</strong>. It will expire in 15 minutes.</p>`,
+    };
+    await transporter.sendMail(mailOptions);
+
     return NextResponse.json(
-      { message: "User registered successfully!" },
+      {
+        message:
+          "Registration successful! Please check your email for the verification code.",
+      },
       { status: 201 }
     );
   } catch (error: any) {
+    console.error("Registration Error:", error);
     return NextResponse.json(
       { message: "Error registering user.", error: error.message },
       { status: 500 }

@@ -27,7 +27,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Compare the provided password with the stored hashed password
+    // ** 3. New: Check if the user is verified **
+    if (!user.isVerified) {
+      return NextResponse.json(
+        { message: "Please verify your email to log in." },
+        { status: 403 }
+      );
+    }
+
+    // 4. Compare the provided password with the stored hashed password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return NextResponse.json(
@@ -36,14 +44,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Create a JWT token
+    // 5. Create a JWT token
     const token = jwt.sign(
       { userId: user._id, username: user.username, email: user.email },
       process.env.JWT_SECRET!,
-      { expiresIn: "1h" } // Token expires in 1 hour
+      { expiresIn: "1h" }
     );
 
-    // 5. Return the token and user data
+    // 6. Return the token and user data
     return NextResponse.json(
       {
         message: "Logged in successfully",
