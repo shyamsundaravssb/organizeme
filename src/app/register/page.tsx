@@ -61,7 +61,8 @@ export default function Register() {
 
       if (response.ok) {
         setSuccess(data.message);
-        router.push("/login");
+        // Redirect to the OTP verification page with the user's email as a query parameter
+        router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
       } else {
         setError(data.message || "Registration failed");
       }
