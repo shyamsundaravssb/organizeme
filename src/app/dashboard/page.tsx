@@ -19,7 +19,17 @@ export default function Dashboard() {
   const [newPlaylistTitle, setNewPlaylistTitle] = useState("");
   const [error, setError] = useState("");
   const [pageError, setPageError] = useState("");
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [playlistToDeleteId, setPlaylistToDeleteId] = useState<string | null>(
+    null
+  );
+
   const router = useRouter();
+
+  const handleOpenConfirmModal = (playlistId: string) => {
+    setPlaylistToDeleteId(playlistId);
+    setIsConfirmModalOpen(true);
+  };
 
   useEffect(() => {
     const fetchUserDataAndPlaylists = async () => {
@@ -88,6 +98,31 @@ export default function Dashboard() {
     }
   };
 
+  const handleDeletePlaylist = async () => {
+    if (!playlistToDeleteId) {
+      return;
+    }
+
+    setIsConfirmModalOpen(false); // Close the modal first
+
+    try {
+      const response = await fetch(`/api/playlists/${playlistToDeleteId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setPlaylists(playlists.filter((p) => p._id !== playlistToDeleteId));
+      } else {
+        const errorData = await response.json();
+        setPageError(errorData.message || "Failed to delete playlist.");
+      }
+    } catch (err) {
+      setPageError("An error occurred during deletion. Please try again.");
+    } finally {
+      setPlaylistToDeleteId(null);
+    }
+  };
+
   // New logout function
   const handleLogout = async () => {
     try {
@@ -145,7 +180,6 @@ export default function Dashboard() {
             Logout
           </button>
         </div>
-
         <div className="mt-8">
           <button
             onClick={() => setIsModalOpen(true)}
@@ -154,7 +188,6 @@ export default function Dashboard() {
             + New Playlist
           </button>
         </div>
-
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {playlists.length > 0 ? (
             playlists.map((playlist) => (
@@ -165,6 +198,22 @@ export default function Dashboard() {
                 <h2 className="text-xl font-semibold text-gray-800">
                   {playlist.title}
                 </h2>
+                <div className="mt-4 flex justify-end space-x-2">
+                  <button
+                    onClick={() =>
+                      console.log("Edit clicked for", playlist.title)
+                    } // We'll replace this with modal logic
+                    className="rounded-lg bg-yellow-500 px-3 py-1 text-white text-sm font-bold hover:bg-yellow-600"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleOpenConfirmModal(playlist._id)}
+                    className="rounded-lg bg-red-500 px-3 py-1 text-white text-sm font-bold hover:bg-red-600"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))
           ) : (
@@ -174,7 +223,6 @@ export default function Dashboard() {
             </p>
           )}
         </div>
-
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
           <h2 className="mb-4 text-2xl font-bold">Create New Playlist</h2>
           <form onSubmit={handleCreatePlaylist}>
@@ -211,6 +259,31 @@ export default function Dashboard() {
               </button>
             </div>
           </form>
+        </Modal>
+
+        <Modal
+          isOpen={isConfirmModalOpen}
+          onClose={() => setIsConfirmModalOpen(false)}
+        >
+          <h2 className="mb-4 text-2xl font-bold">Confirm Deletion</h2>
+          <p className="mb-6">
+            Are you sure you want to delete this playlist? This action cannot be
+            undone.
+          </p>
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={() => setIsConfirmModalOpen(false)}
+              className="rounded-lg bg-gray-200 px-4 py-2 font-bold hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeletePlaylist}
+              className="rounded-lg bg-red-500 px-4 py-2 text-white font-bold hover:bg-red-600"
+            >
+              Delete
+            </button>
+          </div>
         </Modal>
       </div>
     </div>

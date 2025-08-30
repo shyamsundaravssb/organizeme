@@ -76,7 +76,7 @@ export async function DELETE(
     if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-    const { id } = params;
+    const { id } = await params;
 
     const playlist = await Playlist.findOneAndDelete({
       _id: id,
