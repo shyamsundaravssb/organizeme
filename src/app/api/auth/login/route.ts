@@ -3,6 +3,7 @@ import dbConnect from "@/db/dbConnect";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
   await dbConnect();
@@ -51,18 +52,26 @@ export async function POST(request: Request) {
       { expiresIn: "1h" }
     );
 
-    // 6. Return the token and user data
-    return NextResponse.json(
+    // Set the token as a cookie
+    const response = NextResponse.json(
       {
         message: "Logged in successfully",
         user: {
           name: user.name,
           username: user.username,
         },
-        token,
       },
       { status: 200 }
     );
+
+    response.cookies.set("token", token, {
+      httpOnly: true, // Prevents client-side JS from accessing the cookie
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60, // 1 hour
+      path: "/",
+    });
+
+    return response;
   } catch (error: any) {
     return NextResponse.json(
       { message: "Error logging in", error: error.message },

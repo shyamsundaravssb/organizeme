@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import dbConnect from "@/db/dbConnect";
 import User from "@/models/User";
+import { cookies } from "next/headers";
 
 export async function GET(request: Request) {
   await dbConnect();
 
   try {
-    const token = request.headers.get("authorization")?.split(" ")[1];
+    // Corrected line: Await the result of the cookies() function
+    const token = (await cookies()).get("token")?.value;
 
     if (!token) {
       return NextResponse.json(

@@ -36,14 +36,14 @@ export default function Login() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
-
       if (response.ok) {
-        // Store the JWT token in localStorage
-        localStorage.setItem("token", data.token);
-        // Redirect to the dashboard or homepage
-        router.push("/");
+        // The correct logic: a successful API call means the cookie is set.
+        // We now force a full page reload. This new request
+        // will be intercepted by the middleware, which will see the new cookie
+        // and redirect to the dashboard.
+        window.location.href = "/";
       } else {
+        const data = await response.json();
         setError(data.message || "Login failed");
       }
     } catch (err) {

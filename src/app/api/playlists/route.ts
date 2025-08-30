@@ -3,10 +3,11 @@ import jwt from "jsonwebtoken";
 import dbConnect from "@/db/dbConnect";
 import User from "@/models/User";
 import Playlist from "@/models/Playlist";
+import { cookies } from "next/headers";
 
-// Helper function to get the user from the token
-const getAuthenticatedUser = async (request: Request) => {
-  const token = request.headers.get("authorization")?.split(" ")[1];
+// Corrected Helper function to get the user from the token from a cookie
+const getAuthenticatedUser = async () => {
+  const token = (await cookies()).get("token")?.value;
   if (!token) return null;
 
   try {
@@ -19,10 +20,10 @@ const getAuthenticatedUser = async (request: Request) => {
 };
 
 // GET: Fetch all playlists for the authenticated user
-export async function GET(request: Request) {
+export async function GET() {
   await dbConnect();
   try {
-    const user = await getAuthenticatedUser(request);
+    const user = await getAuthenticatedUser();
     if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
@@ -42,7 +43,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   await dbConnect();
   try {
-    const user = await getAuthenticatedUser(request);
+    const user = await getAuthenticatedUser();
     if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
