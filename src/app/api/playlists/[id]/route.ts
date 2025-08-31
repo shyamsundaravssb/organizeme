@@ -5,7 +5,7 @@ import User from "@/models/User";
 import Playlist from "@/models/Playlist";
 import { cookies } from "next/headers";
 
-// Corrected Helper function to get the user from the token from a cookie
+// Helper function to get the user from the token from a cookie
 const getAuthenticatedUser = async () => {
   const token = (await cookies()).get("token")?.value;
   if (!token) return null;
@@ -28,7 +28,8 @@ export async function PUT(
   try {
     const user = await getAuthenticatedUser();
     if (!user) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      // New: Redirect to login page
+      return NextResponse.redirect(new URL("/login", "http://localhost:3000/"));
     }
     const { id } = await params;
     const { title } = await request.json();
@@ -74,7 +75,8 @@ export async function DELETE(
   try {
     const user = await getAuthenticatedUser();
     if (!user) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      // New: Redirect to login page
+      return NextResponse.redirect(new URL("/login", "http://localhost:3000/"));
     }
     const { id } = await params;
 
