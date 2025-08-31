@@ -23,12 +23,21 @@ export default function Dashboard() {
   const [playlistToDeleteId, setPlaylistToDeleteId] = useState<string | null>(
     null
   );
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [playlistToEdit, setPlaylistToEdit] = useState<Playlist | null>(null);
+  const [editedTitle, setEditedTitle] = useState("");
 
   const router = useRouter();
 
   const handleOpenConfirmModal = (playlistId: string) => {
     setPlaylistToDeleteId(playlistId);
     setIsConfirmModalOpen(true);
+  };
+
+  const handleOpenEditModal = (playlist: Playlist) => {
+    setPlaylistToEdit(playlist);
+    setEditedTitle(playlist.title);
+    setIsEditModalOpen(true);
   };
 
   useEffect(() => {
@@ -95,6 +104,44 @@ export default function Dashboard() {
       }
     } catch (err) {
       setError("An error occurred. Please try again.");
+    }
+  };
+
+  const handleEditPlaylist = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+
+    if (!editedTitle || !playlistToEdit) {
+      setError("Playlist title is required.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/playlists/${playlistToEdit._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title: editedTitle }),
+      });
+
+      if (response.ok) {
+        // Update the playlist in the state with the new title
+        setPlaylists(
+          playlists.map((p) =>
+            p._id === playlistToEdit._id ? { ...p, title: editedTitle } : p
+          )
+        );
+        setIsEditModalOpen(false);
+        setPlaylistToEdit(null);
+        setEditedTitle("");
+        setError("");
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || "Failed to update playlist.");
+      }
+    } catch (err) {
+      setError("An error occurred during update. Please try again.");
     }
   };
 
@@ -200,9 +247,7 @@ export default function Dashboard() {
                 </h2>
                 <div className="mt-4 flex justify-end space-x-2">
                   <button
-                    onClick={() =>
-                      console.log("Edit clicked for", playlist.title)
-                    } // We'll replace this with modal logic
+                    onClick={() => handleOpenEditModal(playlist)}
                     className="rounded-lg bg-yellow-500 px-3 py-1 text-white text-sm font-bold hover:bg-yellow-600"
                   >
                     Edit
@@ -260,7 +305,6 @@ export default function Dashboard() {
             </div>
           </form>
         </Modal>
-
         <Modal
           isOpen={isConfirmModalOpen}
           onClose={() => setIsConfirmModalOpen(false)}
@@ -284,6 +328,47 @@ export default function Dashboard() {
               Delete
             </button>
           </div>
+        </Modal>
+
+        <Modal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+        >
+          <h2 className="mb-4 text-2xl font-bold">Edit Playlist</h2>
+          <form onSubmit={handleEditPlaylist}>
+            {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+            <div className="mb-4">
+              <label
+                htmlFor="editedTitle"
+                className="block text-gray-700 font-semibold mb-2"
+              >
+                New Title
+              </label>
+              <input
+                type="text"
+                id="editedTitle"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                className="w-full rounded border px-3 py-2"
+                required
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="rounded-lg bg-gray-200 px-4 py-2 font-bold hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-blue-500 px-4 py-2 text-white font-bold hover:bg-blue-600"
+              >
+                Save Changes
+              </button>
+            </div>
+          </form>
         </Modal>
       </div>
     </div>

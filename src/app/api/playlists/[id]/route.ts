@@ -30,7 +30,7 @@ export async function PUT(
     if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-    const { id } = params;
+    const { id } = await params;
     const { title } = await request.json();
 
     if (!title) {
