@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 import dbConnect from "@/db/dbConnect";
 import User from "@/models/User";
 import Playlist from "@/models/Playlist";
+import Item from "@/models/Item";
 import { cookies } from "next/headers";
 
-// Helper function to get the user from the token from a cookie
+// Helper function with dynamic URL
 const getAuthenticatedUser = async (request: NextRequest) => {
   const token = (await cookies()).get("token")?.value;
   if (!token) {
@@ -23,10 +24,10 @@ const getAuthenticatedUser = async (request: NextRequest) => {
   }
 };
 
-// PUT: Update a specific playlist
-export async function PUT(
+// GET: Fetch all items for a specific playlist
+export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { playlistId: string } }
 ) {
   await dbConnect();
   try {
@@ -36,45 +37,39 @@ export async function PUT(
     }
     const user = authResult;
 
-    const { id } = await params;
-    const { title } = await request.json();
+    const { playlistId } = await params;
 
-    if (!title) {
-      return NextResponse.json(
-        { message: "Title is required" },
-        { status: 400 }
-      );
-    }
-
-    const playlist = await Playlist.findOneAndUpdate(
-      { _id: id, owner: user._id },
-      { title },
-      { new: true }
-    );
-
+    // Ensure the playlist belongs to the user
+    const playlist = await Playlist.findOne({
+      _id: playlistId,
+      owner: user._id,
+    });
     if (!playlist) {
       return NextResponse.json(
-        {
-          message:
-            "Playlist not found or you do not have permission to update it.",
-        },
+        { message: "Playlist not found or you do not have permission." },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(playlist, { status: 200 });
+    // Fetch all items with the correct parentPlaylist ID
+    const items = await Item.find({
+      parentPlaylist: playlistId,
+      owner: user._id,
+    }).sort({ createdAt: -1 });
+
+    return NextResponse.json(items, { status: 200 });
   } catch (error) {
     return NextResponse.json(
-      { message: "Error updating playlist", error },
+      { message: "Error fetching items", error },
       { status: 500 }
     );
   }
 }
 
-// DELETE: Delete a specific playlist
+// DELETE: Delete a specific item
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { itemId: string } }
 ) {
   await dbConnect();
   try {
@@ -84,30 +79,32 @@ export async function DELETE(
     }
     const user = authResult;
 
-    const { id } = await params;
+    const { itemId } = await params;
 
-    const playlist = await Playlist.findOneAndDelete({
-      _id: id,
-      owner: user._id,
-    });
+    // Find and delete the item, ensuring it belongs to the user
+    const item = await Item.findOneAndDelete({ _id: itemId, owner: user._id });
 
-    if (!playlist) {
+    if (!item) {
       return NextResponse.json(
         {
-          message:
-            "Playlist not found or you do not have permission to delete it.",
+          message: "Item not found or you do not have permission to delete it.",
         },
         { status: 404 }
       );
     }
 
+    // Remove the item's ID from the parent playlist's children array
+    await Playlist.findByIdAndUpdate(item.parentPlaylist, {
+      $pull: { children: item._id },
+    });
+
     return NextResponse.json(
-      { message: "Playlist deleted successfully" },
+      { message: "Item deleted successfully" },
       { status: 200 }
     );
   } catch (error) {
     return NextResponse.json(
-      { message: "Error deleting playlist", error },
+      { message: "Error deleting item", error },
       { status: 500 }
     );
   }

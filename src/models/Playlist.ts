@@ -10,6 +10,12 @@ const playlistSchema = new Schema({
     ref: "User",
     required: true,
   },
+  children: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Item",
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,

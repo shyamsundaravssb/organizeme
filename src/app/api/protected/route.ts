@@ -1,21 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import dbConnect from "@/db/dbConnect";
 import User from "@/models/User";
 import { cookies } from "next/headers";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   await dbConnect();
 
   try {
-    // Corrected line: Await the result of the cookies() function
     const token = (await cookies()).get("token")?.value;
 
     if (!token) {
-      return NextResponse.json(
-        { message: "Authorization token missing" },
-        { status: 401 }
-      );
+      // Corrected: Redirect to login page instead of returning JSON error
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
     }
 
     // Verify the token
