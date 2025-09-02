@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Modal from "@/components/ui/Modal";
+import Link from "next/link";
 
 interface Playlist {
   _id: string;
@@ -242,9 +243,14 @@ export default function Dashboard() {
                 key={playlist._id}
                 className="rounded-lg bg-white p-6 shadow-md"
               >
-                <h2 className="text-xl font-semibold text-gray-800">
-                  {playlist.title}
-                </h2>
+                <Link href={`/dashboard/${playlist._id}`} passHref>
+                  <div className="cursor-pointer">
+                    <h2 className="text-xl font-semibold text-gray-800">
+                      {playlist.title}
+                    </h2>
+                  </div>
+                </Link>
+
                 <div className="mt-4 flex justify-end space-x-2">
                   <button
                     onClick={() => handleOpenEditModal(playlist)}

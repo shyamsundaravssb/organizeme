@@ -6,7 +6,7 @@ import Playlist from "@/models/Playlist";
 import Item from "@/models/Item";
 import { cookies } from "next/headers";
 
-// Helper function with dynamic URL
+// Helper function to get the user from the token from a cookie
 const getAuthenticatedUser = async (request: NextRequest) => {
   const token = (await cookies()).get("token")?.value;
   if (!token) {
@@ -14,7 +14,6 @@ const getAuthenticatedUser = async (request: NextRequest) => {
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
-
   try {
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
     const user = await User.findById(decoded.userId);
@@ -24,10 +23,10 @@ const getAuthenticatedUser = async (request: NextRequest) => {
   }
 };
 
-// GET: Fetch all items for a specific playlist
+// GET: Fetches details for a single item
 export async function GET(
   request: NextRequest,
-  { params }: { params: { playlistId: string } }
+  { params }: { params: { itemId: string } }
 ) {
   await dbConnect();
   try {
@@ -37,36 +36,71 @@ export async function GET(
     }
     const user = authResult;
 
-    const { playlistId } = await params;
+    const { itemId } = await params;
 
-    // Ensure the playlist belongs to the user
-    const playlist = await Playlist.findOne({
-      _id: playlistId,
-      owner: user._id,
-    });
-    if (!playlist) {
+    const item = await Item.findOne({ _id: itemId, owner: user._id });
+    if (!item) {
       return NextResponse.json(
-        { message: "Playlist not found or you do not have permission." },
+        { message: "Item not found or you do not have permission." },
         { status: 404 }
       );
     }
 
-    // Fetch all items with the correct parentPlaylist ID
-    const items = await Item.find({
-      parentPlaylist: playlistId,
-      owner: user._id,
-    }).sort({ createdAt: -1 });
-
-    return NextResponse.json(items, { status: 200 });
+    return NextResponse.json(item, { status: 200 });
   } catch (error) {
     return NextResponse.json(
-      { message: "Error fetching items", error },
+      { message: "Error fetching item", error },
       { status: 500 }
     );
   }
 }
 
-// DELETE: Delete a specific item
+// PUT: Updates a single item
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { itemId: string } }
+) {
+  await dbConnect();
+  try {
+    const authResult = await getAuthenticatedUser(request);
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    const user = authResult;
+
+    const { itemId } = await params;
+    const { title, url, notes } = await request.json();
+
+    if (!title && !url && !notes) {
+      return NextResponse.json(
+        { message: "At least one field is required for update." },
+        { status: 400 }
+      );
+    }
+
+    const updatedItem = await Item.findOneAndUpdate(
+      { _id: itemId, owner: user._id },
+      { title, url, notes },
+      { new: true }
+    );
+
+    if (!updatedItem) {
+      return NextResponse.json(
+        { message: "Item not found or you do not have permission." },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(updatedItem, { status: 200 });
+  } catch (error) {
+    return NextResponse.json(
+      { message: "Error updating item", error },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE: Deletes a single item
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { itemId: string } }
@@ -81,7 +115,6 @@ export async function DELETE(
 
     const { itemId } = await params;
 
-    // Find and delete the item, ensuring it belongs to the user
     const item = await Item.findOneAndDelete({ _id: itemId, owner: user._id });
 
     if (!item) {

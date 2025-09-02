@@ -26,7 +26,7 @@ const getAuthenticatedUser = async (request: NextRequest) => {
 // PUT: Update a specific playlist
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { playlistId: string } }
 ) {
   await dbConnect();
   try {
@@ -36,7 +36,7 @@ export async function PUT(
     }
     const user = authResult;
 
-    const { id } = await params;
+    const { playlistId } = await params;
     const { title } = await request.json();
 
     if (!title) {
@@ -47,7 +47,7 @@ export async function PUT(
     }
 
     const playlist = await Playlist.findOneAndUpdate(
-      { _id: id, owner: user._id },
+      { _id: playlistId, owner: user._id },
       { title },
       { new: true }
     );
@@ -74,7 +74,7 @@ export async function PUT(
 // DELETE: Delete a specific playlist
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { playlistId: string } }
 ) {
   await dbConnect();
   try {
@@ -84,10 +84,10 @@ export async function DELETE(
     }
     const user = authResult;
 
-    const { id } = await params;
+    const { playlistId } = await params;
 
     const playlist = await Playlist.findOneAndDelete({
-      _id: id,
+      _id: playlistId,
       owner: user._id,
     });
 
