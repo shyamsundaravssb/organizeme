@@ -1,17 +1,30 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-const itemSchema = new Schema({
+export interface IItem extends Document {
+  title: string;
+  description: string;
+  notes?: string;
+  parentPlaylist: Schema.Types.ObjectId;
+  owner: Schema.Types.ObjectId;
+  createdAt: Date;
+}
+
+const itemSchema = new Schema<IItem>({
   title: {
     type: String,
-    required: true,
+    required: [true, "Item title is required."],
+    trim: true,
   },
-  url: {
+  description: {
     type: String,
-    required: true,
+    required: [true, "Item description is required."],
+    trim: true,
   },
   notes: {
     type: String,
+    trim: true,
   },
+  // Links to its container (a playlist or sub-playlist)
   parentPlaylist: {
     type: Schema.Types.ObjectId,
     ref: "Playlist",
@@ -28,6 +41,6 @@ const itemSchema = new Schema({
   },
 });
 
-const Item = mongoose.models.Item || mongoose.model("Item", itemSchema);
+const Item = mongoose.models.Item || mongoose.model<IItem>("Item", itemSchema);
 
 export default Item;
