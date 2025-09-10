@@ -1,382 +1,171 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import Modal from "@/components/ui/Modal";
-import Link from "next/link";
+import Modal from "../components/Modal";
 
+// Define a type for our playlist object for better TypeScript support
 interface Playlist {
   _id: string;
   title: string;
+  description?: string;
 }
 
-export default function Dashboard() {
-  const [user, setUser] = useState<{ name: string; username: string } | null>(
-    null
-  );
+export default function DashboardPage() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPlaylistTitle, setNewPlaylistTitle] = useState("");
-  const [error, setError] = useState("");
-  const [pageError, setPageError] = useState("");
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [playlistToDeleteId, setPlaylistToDeleteId] = useState<string | null>(
-    null
-  );
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [playlistToEdit, setPlaylistToEdit] = useState<Playlist | null>(null);
-  const [editedTitle, setEditedTitle] = useState("");
-
+  const [newPlaylistDescription, setNewPlaylistDescription] = useState("");
   const router = useRouter();
 
-  const handleOpenConfirmModal = (playlistId: string) => {
-    setPlaylistToDeleteId(playlistId);
-    setIsConfirmModalOpen(true);
-  };
-
-  const handleOpenEditModal = (playlist: Playlist) => {
-    setPlaylistToEdit(playlist);
-    setEditedTitle(playlist.title);
-    setIsEditModalOpen(true);
-  };
-
+  // 1. Data Fetching Logic
   useEffect(() => {
-    const fetchUserDataAndPlaylists = async () => {
+    const fetchPlaylists = async () => {
       try {
-        // Fetch user data from the protected API route
-        const userRes = await fetch("/api/protected");
-
-        if (userRes.ok) {
-          const userData = await userRes.json();
-          setUser(userData.user);
-
-          // Fetch user's playlists
-          const playlistsRes = await fetch("/api/playlists");
-
-          if (playlistsRes.ok) {
-            const playlistsData = await playlistsRes.json();
-            setPlaylists(playlistsData);
-          } else {
-            const errorData = await playlistsRes.json();
-            setPageError(errorData.message || "Failed to fetch playlists.");
-          }
-        } else {
-          const errorData = await userRes.json();
-          setPageError(errorData.message || "An error occurred.");
+        const response = await fetch("/api/playlists");
+        if (response.status === 401) {
+          router.push("/login"); // Redirect if not authorized
+          return;
         }
-      } catch (error) {
-        setPageError("An error occurred. Please try again.");
+        if (!response.ok) {
+          throw new Error("Failed to fetch playlists.");
+        }
+        const data: Playlist[] = await response.json();
+        setPlaylists(data);
+      } catch (err: any) {
+        setError(err.message);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
-    fetchUserDataAndPlaylists();
-  }, []);
+    fetchPlaylists();
+  }, [router]);
 
-  const handleCreatePlaylist = async (e: React.FormEvent<HTMLFormElement>) => {
+  // 2. Playlist Creation Logic
+  const handleCreatePlaylist = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    if (!newPlaylistTitle) {
-      setError("Playlist title is required.");
-      return;
-    }
+    if (!newPlaylistTitle) return;
 
     try {
       const response = await fetch("/api/playlists", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ title: newPlaylistTitle }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: newPlaylistTitle,
+          description: newPlaylistDescription,
+        }),
       });
 
-      if (response.ok) {
-        const newPlaylist = await response.json();
-        setPlaylists((prev) => [...prev, newPlaylist]);
-        setIsModalOpen(false);
-        setNewPlaylistTitle("");
-        setError("");
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Failed to create playlist.");
+      if (!response.ok) {
+        throw new Error("Failed to create playlist.");
       }
-    } catch (err) {
-      setError("An error occurred. Please try again.");
+
+      const newPlaylist: Playlist = await response.json();
+      setPlaylists([newPlaylist, ...playlists]); // Add new playlist to the top of the list
+      setIsModalOpen(false); // Close modal
+      setNewPlaylistTitle(""); // Reset form
+      setNewPlaylistDescription("");
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
-  const handleEditPlaylist = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
+  // 3. Conditional Rendering
+  if (isLoading) return <p>Loading your dashboard...</p>;
+  if (error) return <p>Error: {error}</p>;
 
-    if (!editedTitle || !playlistToEdit) {
-      setError("Playlist title is required.");
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/playlists/${playlistToEdit._id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ title: editedTitle }),
-      });
-
-      if (response.ok) {
-        // Update the playlist in the state with the new title
-        setPlaylists(
-          playlists.map((p) =>
-            p._id === playlistToEdit._id ? { ...p, title: editedTitle } : p
-          )
-        );
-        setIsEditModalOpen(false);
-        setPlaylistToEdit(null);
-        setEditedTitle("");
-        setError("");
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Failed to update playlist.");
-      }
-    } catch (err) {
-      setError("An error occurred during update. Please try again.");
-    }
-  };
-
-  const handleDeletePlaylist = async () => {
-    if (!playlistToDeleteId) {
-      return;
-    }
-
-    setIsConfirmModalOpen(false); // Close the modal first
-
-    try {
-      const response = await fetch(`/api/playlists/${playlistToDeleteId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        setPlaylists(playlists.filter((p) => p._id !== playlistToDeleteId));
-      } else {
-        const errorData = await response.json();
-        setPageError(errorData.message || "Failed to delete playlist.");
-      }
-    } catch (err) {
-      setPageError("An error occurred during deletion. Please try again.");
-    } finally {
-      setPlaylistToDeleteId(null);
-    }
-  };
-
-  // New logout function
-  const handleLogout = async () => {
-    try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-      });
-
-      if (response.ok) {
-        // On successful logout, trigger a redirect to the home/login page
-        router.push("/");
-      } else {
-        console.error("Logout failed.");
-      }
-    } catch (error) {
-      console.error("An error occurred during logout.", error);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-xl font-semibold">
-        Loading...
-      </div>
-    );
-  }
-
-  if (pageError) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-red-500 font-semibold text-center p-4">
-        {pageError}
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
+  // 4. Main Component Render
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="container mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-800">
-              Welcome, {user.name}!
-            </h1>
-            <p className="mt-2 text-lg text-gray-600">
-              This is your personal dashboard.
-            </p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="rounded-lg bg-red-500 px-4 py-2 text-white font-bold hover:bg-red-600"
-          >
-            Logout
-          </button>
-        </div>
-        <div className="mt-8">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="rounded-lg bg-blue-500 px-4 py-2 text-white font-bold hover:bg-blue-600"
-          >
-            + New Playlist
-          </button>
-        </div>
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {playlists.length > 0 ? (
-            playlists.map((playlist) => (
-              <div
-                key={playlist._id}
-                className="rounded-lg bg-white p-6 shadow-md"
-              >
-                <Link href={`/dashboard/${playlist._id}`} passHref>
-                  <div className="cursor-pointer">
-                    <h2 className="text-xl font-semibold text-gray-800">
-                      {playlist.title}
-                    </h2>
-                  </div>
-                </Link>
-
-                <div className="mt-4 flex justify-end space-x-2">
-                  <button
-                    onClick={() => handleOpenEditModal(playlist)}
-                    className="rounded-lg bg-yellow-500 px-3 py-1 text-white text-sm font-bold hover:bg-yellow-600"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleOpenConfirmModal(playlist._id)}
-                    className="rounded-lg bg-red-500 px-3 py-1 text-white text-sm font-bold hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-500">
-              You don't have any playlists yet. Click 'New Playlist' to get
-              started!
-            </p>
-          )}
-        </div>
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-          <h2 className="mb-4 text-2xl font-bold">Create New Playlist</h2>
-          <form onSubmit={handleCreatePlaylist}>
-            {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
-            <div className="mb-4">
-              <label
-                htmlFor="playlistTitle"
-                className="block text-gray-700 font-semibold mb-2"
-              >
-                Playlist Title
-              </label>
-              <input
-                type="text"
-                id="playlistTitle"
-                value={newPlaylistTitle}
-                onChange={(e) => setNewPlaylistTitle(e.target.value)}
-                className="w-full rounded border px-3 py-2"
-                required
-              />
-            </div>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="mr-2 rounded-lg bg-gray-200 px-4 py-2 font-bold hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-lg bg-blue-500 px-4 py-2 text-white font-bold hover:bg-blue-600"
-              >
-                Create
-              </button>
-            </div>
-          </form>
-        </Modal>
-        <Modal
-          isOpen={isConfirmModalOpen}
-          onClose={() => setIsConfirmModalOpen(false)}
+    <div className="container mx-auto p-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Your Playlists</h1>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
         >
-          <h2 className="mb-4 text-2xl font-bold">Confirm Deletion</h2>
-          <p className="mb-6">
-            Are you sure you want to delete this playlist? This action cannot be
-            undone.
+          + New Playlist
+        </button>
+      </div>
+
+      {/* Playlist Grid/List */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {playlists.length > 0 ? (
+          playlists.map((playlist) => (
+            <div
+              key={playlist._id}
+              onClick={() => router.push(`/playlist/${playlist._id}`)}
+              className="p-6 bg-white rounded-lg shadow-md hover:shadow-lg cursor-pointer transition-shadow"
+            >
+              <h2 className="text-xl font-semibold mb-2">{playlist.title}</h2>
+              <p className="text-gray-600">
+                {playlist.description || "No description"}
+              </p>
+            </div>
+          ))
+        ) : (
+          <p>
+            You haven't created any playlists yet. Click "+ New Playlist" to get
+            started!
           </p>
-          <div className="flex justify-end space-x-2">
+        )}
+      </div>
+
+      {/* Use the reusable Modal component */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <h2 className="text-2xl font-bold mb-4">Create a New Playlist</h2>
+        <form onSubmit={handleCreatePlaylist}>
+          {/* Form fields and buttons are the same as before */}
+          <div className="mb-4">
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Title
+            </label>
+            <input
+              type="text"
+              id="title"
+              value={newPlaylistTitle}
+              onChange={(e) => setNewPlaylistTitle(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              required
+            />
+          </div>
+          <div className="mb-6">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Description (Optional)
+            </label>
+            <textarea
+              id="description"
+              value={newPlaylistDescription}
+              onChange={(e) => setNewPlaylistDescription(e.target.value)}
+              rows={3}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+            ></textarea>
+          </div>
+          <div className="flex justify-end gap-4">
             <button
-              onClick={() => setIsConfirmModalOpen(false)}
-              className="rounded-lg bg-gray-200 px-4 py-2 font-bold hover:bg-gray-300"
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="py-2 px-4 bg-gray-200 rounded-md"
             >
               Cancel
             </button>
             <button
-              onClick={handleDeletePlaylist}
-              className="rounded-lg bg-red-500 px-4 py-2 text-white font-bold hover:bg-red-600"
+              type="submit"
+              className="py-2 px-4 bg-blue-500 text-white font-bold rounded-md"
             >
-              Delete
+              Create
             </button>
           </div>
-        </Modal>
-
-        <Modal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-        >
-          <h2 className="mb-4 text-2xl font-bold">Edit Playlist</h2>
-          <form onSubmit={handleEditPlaylist}>
-            {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
-            <div className="mb-4">
-              <label
-                htmlFor="editedTitle"
-                className="block text-gray-700 font-semibold mb-2"
-              >
-                New Title
-              </label>
-              <input
-                type="text"
-                id="editedTitle"
-                value={editedTitle}
-                onChange={(e) => setEditedTitle(e.target.value)}
-                className="w-full rounded border px-3 py-2"
-                required
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <button
-                type="button"
-                onClick={() => setIsEditModalOpen(false)}
-                className="rounded-lg bg-gray-200 px-4 py-2 font-bold hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-lg bg-blue-500 px-4 py-2 text-white font-bold hover:bg-blue-600"
-              >
-                Save Changes
-              </button>
-            </div>
-          </form>
-        </Modal>
-      </div>
+        </form>
+      </Modal>
     </div>
   );
 }

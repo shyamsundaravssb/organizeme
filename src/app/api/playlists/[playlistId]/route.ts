@@ -4,6 +4,42 @@ import Playlist from "@/models/Playlist";
 import Item from "@/models/Item";
 import { getAuthenticatedUser } from "@/lib/getAuthenticatedUser";
 
+// GET: Fetch a single playlist by its ID
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { playlistId: string } }
+) {
+  await dbConnect();
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { playlistId } = await params;
+
+    // Find the playlist and ensure it belongs to the logged-in user
+    const playlist = await Playlist.findOne({
+      _id: playlistId,
+      owner: user._id,
+    });
+
+    if (!playlist) {
+      return NextResponse.json(
+        { message: "Playlist not found or permission denied" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(playlist, { status: 200 });
+  } catch (error) {
+    return NextResponse.json(
+      { message: "Error fetching playlist", error },
+      { status: 500 }
+    );
+  }
+}
+
 // PUT: Update a specific playlist's content
 export async function PUT(
   request: NextRequest,
