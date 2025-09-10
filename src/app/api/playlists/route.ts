@@ -1,41 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
 import dbConnect from "@/db/dbConnect";
-import User from "@/models/User";
 import Playlist from "@/models/Playlist";
-import { cookies } from "next/headers";
+import { getAuthenticatedUser } from "@/lib/getAuthenticatedUser"; // Adjust path if needed
 
-// Helper function to get the user from the token from a cookie
-const getAuthenticatedUser = async (request: NextRequest) => {
-  const token = (await cookies()).get("token")?.value;
-  if (!token) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
-  }
-
-  try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-    const user = await User.findById(decoded.userId);
-    return user || null;
-  } catch (error) {
-    return null;
-  }
-};
-
-// GET: Fetch all playlists for the authenticated user
+// GET: Fetch all top-level playlists for the authenticated user
 export async function GET(request: NextRequest) {
   await dbConnect();
   try {
-    const authResult = await getAuthenticatedUser(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
+    const user = await getAuthenticatedUser();
+    if (!user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-    const user = authResult;
 
-    const playlists = await Playlist.find({ owner: user._id }).sort({
+    // Find playlists where the owner is the current user AND it's a top-level playlist
+    const playlists = await Playlist.find({
+      owner: user._id,
+      parent: null,
+    }).sort({
       createdAt: -1,
     });
+
     return NextResponse.json(playlists, { status: 200 });
   } catch (error) {
     return NextResponse.json(
@@ -45,24 +29,31 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Create a new playlist
+// POST: Create a new top-level playlist
 export async function POST(request: NextRequest) {
   await dbConnect();
   try {
-    const authResult = await getAuthenticatedUser(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
+    const user = await getAuthenticatedUser();
+    if (!user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-    const user = authResult;
 
-    const { title } = await request.json();
+    const { title, description } = await request.json();
+
     if (!title) {
       return NextResponse.json(
         { message: "Title is required" },
         { status: 400 }
       );
     }
-    const newPlaylist = new Playlist({ title, owner: user._id });
+
+    const newPlaylist = new Playlist({
+      title,
+      description,
+      owner: user._id,
+      // 'parent' will be null by default, creating a top-level playlist
+    });
+
     await newPlaylist.save();
     return NextResponse.json(newPlaylist, { status: 201 });
   } catch (error) {
