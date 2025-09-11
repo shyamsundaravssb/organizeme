@@ -73,6 +73,23 @@ export default function DashboardPage() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST", // Or GET, depending on your API route's implementation
+      });
+
+      if (!response.ok) {
+        throw new Error("Logout failed.");
+      }
+
+      // On successful logout, redirect to the login page
+      router.push("/login");
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    }
+  };
+
   // 3. Conditional Rendering
   if (isLoading) return <p>Loading your dashboard...</p>;
   if (error) return <p>Error: {error}</p>;
@@ -82,14 +99,23 @@ export default function DashboardPage() {
     <div className="container mx-auto p-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Your Playlists</h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          + New Playlist
-        </button>
+        {/* Container for the action buttons */}
+        <div className="flex gap-4">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            + New Playlist
+          </button>
+          {/* The new Logout button */}
+          <button
+            onClick={handleLogout}
+            className="bg-gray-200 hover:bg-gray-300 text-black font-bold py-2 px-4 rounded"
+          >
+            Logout
+          </button>
+        </div>
       </div>
-
       {/* Playlist Grid/List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {playlists.length > 0 ? (
