@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/db/dbConnect";
 import Playlist from "@/models/Playlist";
-import Item from "@/models/Item";
 import { getAuthenticatedUser } from "@/lib/getAuthenticatedUser";
 
-// POST: Create a new item within a playlist
+// POST: Create a new sub-playlist within a parent playlist
 export async function POST(
   request: NextRequest,
   { params }: { params: { playlistId: string } }
@@ -16,42 +15,41 @@ export async function POST(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { playlistId: parentPlaylistId } = params;
-    const { title, description, notes } = await request.json();
+    const { playlistId: parentId } = params;
+    const { title, description } = await request.json();
 
-    if (!title || !description) {
+    if (!title) {
       return NextResponse.json(
-        { message: "Title and description are required" },
+        { message: "Title is required" },
         { status: 400 }
       );
     }
 
     // Security Check: Verify the parent playlist exists and belongs to the user
     const parentPlaylist = await Playlist.findOne({
-      _id: parentPlaylistId,
+      _id: parentId,
       owner: user._id,
     });
     if (!parentPlaylist) {
       return NextResponse.json(
-        { message: "Playlist not found or permission denied" },
+        { message: "Parent playlist not found or permission denied" },
         { status: 404 }
       );
     }
 
-    // Create the new item
-    const newItem = new Item({
+    // Create the new playlist, setting its parent field
+    const newSubPlaylist = new Playlist({
       title,
       description,
-      notes,
       owner: user._id,
-      parentPlaylist: parentPlaylistId, // Link item to its parent
+      parent: parentId, // This creates the nested relationship
     });
 
-    await newItem.save();
-    return NextResponse.json(newItem, { status: 201 });
+    await newSubPlaylist.save();
+    return NextResponse.json(newSubPlaylist, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      { message: "Error creating item", error },
+      { message: "Error creating sub-playlist", error },
       { status: 500 }
     );
   }
