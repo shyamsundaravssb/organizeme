@@ -4,7 +4,7 @@ import Playlist from "@/models/Playlist";
 import Item from "@/models/Item";
 import { getAuthenticatedUser } from "@/lib/getAuthenticatedUser";
 
-// GET: Fetch a single playlist by its ID
+// GET: Fetch a single playlist AND its contents by its ID
 export async function GET(
   request: NextRequest,
   { params }: { params: { playlistId: string } }
@@ -18,7 +18,7 @@ export async function GET(
 
     const { playlistId } = await params;
 
-    // Find the playlist and ensure it belongs to the logged-in user
+    // 1. Find the main playlist and verify ownership
     const playlist = await Playlist.findOne({
       _id: playlistId,
       owner: user._id,
@@ -31,10 +31,24 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(playlist, { status: 200 });
+    // 2. Find all direct children (sub-playlists and items)
+    const subPlaylists = await Playlist.find({
+      parent: playlistId,
+      owner: user._id,
+    });
+    const items = await Item.find({
+      parentPlaylist: playlistId,
+      owner: user._id,
+    });
+
+    // 3. Return all data in a single object
+    return NextResponse.json(
+      { playlist, subPlaylists, items },
+      { status: 200 }
+    );
   } catch (error) {
     return NextResponse.json(
-      { message: "Error fetching playlist", error },
+      { message: "Error fetching playlist content", error },
       { status: 500 }
     );
   }

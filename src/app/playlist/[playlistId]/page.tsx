@@ -4,7 +4,12 @@ import { useState, useEffect, FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Modal from "@/app/components/Modal"; // Adjust path if needed
 
-// Expanded interface to include all playlist fields
+// Interfaces for our data structures
+interface Item {
+  _id: string;
+  title: string;
+  description: string;
+}
 interface Playlist {
   _id: string;
   title: string;
@@ -20,44 +25,95 @@ export default function PlaylistPage() {
   // State for modals
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isSubPlaylistModalOpen, setIsSubPlaylistModalOpen] = useState(false);
+  const [isItemModalOpen, setIsItemModalOpen] = useState(false);
 
   // State for the edit form
   const [editedTitle, setEditedTitle] = useState("");
   const [editedDescription, setEditedDescription] = useState("");
+  const [newItemTitle, setNewItemTitle] = useState("");
+  const [newItemDescription, setNewItemDescription] = useState("");
+  const [newSubPlaylistTitle, setNewSubPlaylistTitle] = useState("");
+  const [newSubPlaylistDescription, setNewSubPlaylistDescription] =
+    useState("");
+
+  // New state for nested content
+  const [subPlaylists, setSubPlaylists] = useState<Playlist[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
 
   const params = useParams();
   const playlistId = params.playlistId as string;
   const router = useRouter();
 
-  // 1. Data Fetching for a single playlist
+  // 1. Updated Data Fetching Logic
   useEffect(() => {
     if (!playlistId) return;
-
-    const fetchPlaylist = async () => {
+    const fetchPlaylistData = async () => {
       try {
         const response = await fetch(`/api/playlists/${playlistId}`);
-        if (response.status === 401) {
-          router.push("/login");
-          return;
-        }
-        if (!response.ok) {
-          throw new Error(
-            "Playlist not found or you do not have permission to view it."
-          );
-        }
-        const data: Playlist = await response.json();
-        setPlaylist(data);
-        setEditedTitle(data.title); // Pre-fill edit form state
-        setEditedDescription(data.description || "");
+        if (!response.ok) throw new Error("Failed to fetch data.");
+        const { playlist, subPlaylists, items } = await response.json();
+        setPlaylist(playlist);
+        setSubPlaylists(subPlaylists);
+        setItems(items);
       } catch (err: any) {
         setError(err.message);
       } finally {
         setIsLoading(false);
       }
     };
+    fetchPlaylistData();
+  }, [playlistId]);
 
-    fetchPlaylist();
-  }, [playlistId, router]);
+  // 2. Handler for creating a new sub-playlist
+  // Updated handler to include description
+  const handleCreateSubPlaylist = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(
+        `/api/playlists/${playlistId}/subplaylists`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: newSubPlaylistTitle,
+            description: newSubPlaylistDescription, // <-- Pass description to API
+          }),
+        }
+      );
+      if (!response.ok) throw new Error("Failed to create sub-playlist.");
+      const newSub = await response.json();
+      setSubPlaylists([newSub, ...subPlaylists]);
+      setIsSubPlaylistModalOpen(false);
+      setNewSubPlaylistTitle("");
+      setNewSubPlaylistDescription(""); // <-- Reset description state
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    }
+  };
+
+  // 3. Handler for creating a new item
+  const handleCreateItem = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`/api/playlists/${playlistId}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: newItemTitle,
+          description: newItemDescription,
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to create item.");
+      const newItem = await response.json();
+      setItems([newItem, ...items]); // Optimistic update
+      setIsItemModalOpen(false);
+      setNewItemTitle("");
+      setNewItemDescription("");
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    }
+  };
 
   // 2. Handler for updating the playlist
   const handleUpdatePlaylist = async (e: FormEvent) => {
@@ -112,13 +168,20 @@ export default function PlaylistPage() {
     }
   };
 
+  const handleOpenEditModal = () => {
+    if (!playlist) return;
+    setEditedTitle(playlist.title);
+    setEditedDescription(playlist.description || "");
+    setIsEditModalOpen(true);
+  };
+
   if (isLoading) return <p>Loading playlist...</p>;
   if (error) return <p>Error: {error}</p>;
   if (!playlist) return <p>Playlist not found.</p>;
 
   return (
     <div className="container mx-auto p-8">
-      {/* Header Section */}
+      {/* 1. Header Section */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold">{playlist.title}</h1>
         <p className="text-lg text-gray-600 mt-2">{playlist.description}</p>
@@ -134,10 +197,10 @@ export default function PlaylistPage() {
         </span>
       </div>
 
-      {/* Controls Section */}
-      <div className="flex gap-4 mb-8 p-4 bg-gray-50 rounded-lg border">
+      {/* 2. Main Controls Section */}
+      <div className="flex flex-wrap gap-4 mb-8 p-4 bg-gray-50 rounded-lg border">
         <button
-          onClick={() => setIsEditModalOpen(true)}
+          onClick={handleOpenEditModal}
           className="bg-gray-200 hover:bg-gray-300 text-black font-bold py-2 px-4 rounded"
         >
           Edit Details
@@ -156,14 +219,79 @@ export default function PlaylistPage() {
         </button>
       </div>
 
-      {/* Content will go here in Phase 3 */}
-      <div className="p-4 border-dashed border-2 rounded-lg">
-        <p className="text-gray-500">
-          Items and Sub-Playlists will be displayed here in the next phase.
-        </p>
+      {/* 3. "+ Add" Buttons */}
+      <div className="my-8 flex flex-wrap gap-4">
+        <button
+          onClick={() => setIsSubPlaylistModalOpen(true)}
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          + New Sub-Playlist
+        </button>
+        <button
+          onClick={() => setIsItemModalOpen(true)}
+          className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+        >
+          + New Item
+        </button>
       </div>
 
-      {/* Edit Modal */}
+      {/* 4. Sub-Playlists Section */}
+      <div className="mb-12">
+        <h2 className="text-2xl font-semibold border-b pb-2 mb-4">
+          Sub-Playlists
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {subPlaylists.length > 0 ? (
+            subPlaylists.map((sub) => (
+              <div
+                key={sub._id}
+                onClick={() => router.push(`/playlist/${sub._id}`)}
+                className="p-4 bg-gray-100 rounded-lg shadow cursor-pointer hover:shadow-md transition-shadow"
+              >
+                <h3 className="font-bold text-lg">{sub.title}</h3>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500">No sub-playlists yet.</p>
+          )}
+        </div>
+      </div>
+
+      {/* 5. Items Section */}
+      <div>
+        <h2 className="text-2xl font-semibold border-b pb-2 mb-4">Items</h2>
+        <div className="space-y-4">
+          {items.length > 0 ? (
+            items.map((item) => (
+              <div
+                key={item._id}
+                className="p-4 bg-white rounded-lg shadow flex justify-between items-center"
+              >
+                <div>
+                  <h3 className="font-bold text-lg">{item.title}</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {item.description}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button className="text-sm py-1 px-3 bg-gray-200 hover:bg-gray-300 rounded">
+                    Edit
+                  </button>
+                  <button className="text-sm py-1 px-3 bg-red-100 hover:bg-red-200 text-red-800 rounded">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500">No items yet.</p>
+          )}
+        </div>
+      </div>
+
+      {/* 6. Modals */}
+
+      {/* Edit Playlist Modal - The form inside is now correctly pre-filled by handleOpenEditModal */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         <h2 className="text-2xl font-bold mb-4">Edit Playlist</h2>
         <form onSubmit={handleUpdatePlaylist}>
@@ -179,7 +307,7 @@ export default function PlaylistPage() {
               id="edit-title"
               value={editedTitle}
               onChange={(e) => setEditedTitle(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
               required
             />
           </div>
@@ -195,20 +323,20 @@ export default function PlaylistPage() {
               value={editedDescription}
               onChange={(e) => setEditedDescription(e.target.value)}
               rows={3}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
             ></textarea>
           </div>
           <div className="flex justify-end gap-4">
             <button
               type="button"
               onClick={() => setIsEditModalOpen(false)}
-              className="py-2 px-4 bg-gray-200 hover:bg-gray-300 rounded-md"
+              className="py-2 px-4 bg-gray-200 rounded-md"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md"
+              className="py-2 px-4 bg-blue-500 text-white font-bold rounded-md"
             >
               Save Changes
             </button>
@@ -216,7 +344,7 @@ export default function PlaylistPage() {
         </form>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Playlist Confirmation Modal */}
       <Modal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
@@ -242,6 +370,116 @@ export default function PlaylistPage() {
             Yes, Delete
           </button>
         </div>
+      </Modal>
+
+      {/* Create Sub-Playlist Modal */}
+      <Modal
+        isOpen={isSubPlaylistModalOpen}
+        onClose={() => setIsSubPlaylistModalOpen(false)}
+      >
+        <h2 className="text-2xl font-bold mb-4">Create New Sub-Playlist</h2>
+        <form onSubmit={handleCreateSubPlaylist}>
+          <div className="mb-4">
+            <label
+              htmlFor="sub-title"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Title
+            </label>
+            <input
+              type="text"
+              id="sub-title"
+              value={newSubPlaylistTitle}
+              onChange={(e) => setNewSubPlaylistTitle(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              required
+            />
+          </div>
+          <div className="mb-6">
+            <label
+              htmlFor="sub-description"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Description (Optional)
+            </label>
+            <textarea
+              id="sub-description"
+              value={newSubPlaylistDescription}
+              onChange={(e) => setNewSubPlaylistDescription(e.target.value)}
+              rows={3}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+            ></textarea>
+          </div>
+          <div className="flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={() => setIsSubPlaylistModalOpen(false)}
+              className="py-2 px-4 bg-gray-200 rounded-md"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="py-2 px-4 bg-blue-500 text-white font-bold rounded-md"
+            >
+              Create
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Create Item Modal */}
+      <Modal isOpen={isItemModalOpen} onClose={() => setIsItemModalOpen(false)}>
+        <h2 className="text-2xl font-bold mb-4">Create New Item</h2>
+        <form onSubmit={handleCreateItem}>
+          <div className="mb-4">
+            <label
+              htmlFor="item-title"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Title
+            </label>
+            <input
+              type="text"
+              id="item-title"
+              value={newItemTitle}
+              onChange={(e) => setNewItemTitle(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              required
+            />
+          </div>
+          <div className="mb-6">
+            <label
+              htmlFor="item-description"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Description
+            </label>
+            <textarea
+              id="item-description"
+              value={newItemDescription}
+              onChange={(e) => setNewItemDescription(e.target.value)}
+              rows={4}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              required
+            ></textarea>
+          </div>
+          <div className="flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={() => setIsItemModalOpen(false)}
+              className="py-2 px-4 bg-gray-200 rounded-md"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="py-2 px-4 bg-green-500 text-white font-bold rounded-md"
+            >
+              Create
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   );
