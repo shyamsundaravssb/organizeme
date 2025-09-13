@@ -15,7 +15,7 @@ export async function PUT(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { itemId } = params;
+    const { itemId } = await params;
     const { title, description, notes } = await request.json();
 
     if (!title || !description) {
@@ -59,7 +59,7 @@ export async function DELETE(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { itemId } = params;
+    const { itemId } = await params;
 
     const deletedItem = await Item.findOneAndDelete({
       _id: itemId,

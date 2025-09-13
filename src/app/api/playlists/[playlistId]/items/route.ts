@@ -16,7 +16,7 @@ export async function POST(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { playlistId: parentPlaylistId } = params;
+    const { playlistId: parentPlaylistId } = await params;
     const { title, description, notes } = await request.json();
 
     if (!title || !description) {
