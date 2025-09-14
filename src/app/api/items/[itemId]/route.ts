@@ -3,6 +3,39 @@ import dbConnect from "@/db/dbConnect";
 import Item from "@/models/Item";
 import { getAuthenticatedUser } from "@/lib/getAuthenticatedUser";
 
+// NEW - GET: Fetch a single item by its ID
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { itemId: string } }
+) {
+  await dbConnect();
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { itemId } = await params;
+
+    // Find the item and verify ownership
+    const item = await Item.findOne({ _id: itemId, owner: user._id });
+
+    if (!item) {
+      return NextResponse.json(
+        { message: "Item not found or permission denied" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(item, { status: 200 });
+  } catch (error) {
+    return NextResponse.json(
+      { message: "Error fetching item", error },
+      { status: 500 }
+    );
+  }
+}
+
 // PUT: Update a specific item
 export async function PUT(
   request: NextRequest,
