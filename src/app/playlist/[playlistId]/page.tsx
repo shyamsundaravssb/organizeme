@@ -15,6 +15,7 @@ interface Playlist {
   title: string;
   description?: string;
   visibility: "public" | "private";
+  parent: string | null;
 }
 
 export default function PlaylistPage() {
@@ -157,12 +158,22 @@ export default function PlaylistPage() {
 
   // 4. Handler for deleting the playlist
   const handleDeletePlaylist = async () => {
+    if (!playlist) return; // Add a guard clause
+
     try {
       const response = await fetch(`/api/playlists/${playlistId}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete playlist.");
-      router.push("/dashboard"); // Redirect to dashboard on successful deletion
+
+      // New conditional redirect logic
+      if (playlist.parent) {
+        // If there's a parent, go to the parent's page
+        router.push(`/playlist/${playlist.parent}`);
+      } else {
+        // Otherwise, go to the dashboard
+        router.push("/dashboard");
+      }
     } catch (err: any) {
       alert(`Error: ${err.message}`);
     }
@@ -175,6 +186,19 @@ export default function PlaylistPage() {
     setIsEditModalOpen(true);
   };
 
+  // New handler for the back button
+  const handleBackNavigation = () => {
+    if (!playlist) return;
+
+    if (playlist.parent) {
+      // If there's a parent, go to the parent's page
+      router.push(`/playlist/${playlist.parent}`);
+    } else {
+      // Otherwise, go to the dashboard
+      router.push("/dashboard");
+    }
+  };
+
   if (isLoading) return <p>Loading playlist...</p>;
   if (error) return <p>Error: {error}</p>;
   if (!playlist) return <p>Playlist not found.</p>;
@@ -183,6 +207,24 @@ export default function PlaylistPage() {
     <div className="container mx-auto p-8">
       {/* 1. Header Section */}
       <div className="mb-8">
+        <button
+          onClick={handleBackNavigation}
+          className="text-blue-500 hover:underline mb-4 flex items-center"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 mr-1"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+              clipRule="evenodd"
+            />
+          </svg>
+          {playlist.parent ? "Back to Parent Playlist" : "Back to Dashboard"}
+        </button>
         <h1 className="text-4xl font-bold">{playlist.title}</h1>
         <p className="text-lg text-gray-600 mt-2">{playlist.description}</p>
         <span
