@@ -39,12 +39,6 @@ export default function PlaylistPage() {
   const [newSubPlaylistDescription, setNewSubPlaylistDescription] =
     useState("");
 
-  // --- NEW STATE FOR ITEM MANAGEMENT ---
-  const [itemToEdit, setItemToEdit] = useState<Item | null>(null);
-  const [itemToDelete, setItemToDelete] = useState<Item | null>(null);
-  const [editedItemTitle, setEditedItemTitle] = useState("");
-  const [editedItemDescription, setEditedItemDescription] = useState("");
-
   // New state for nested content
   const [subPlaylists, setSubPlaylists] = useState<Playlist[]>([]);
   const [items, setItems] = useState<Item[]>([]);
@@ -203,58 +197,6 @@ export default function PlaylistPage() {
     } else {
       // Otherwise, go to the dashboard
       router.push("/dashboard");
-    }
-  };
-
-  // Opens the edit modal and pre-fills it with the item's data
-  const handleOpenItemEditModal = (item: Item) => {
-    setItemToEdit(item);
-    setEditedItemTitle(item.title);
-    setEditedItemDescription(item.description);
-  };
-
-  // Submits the update request for an item
-  const handleUpdateItem = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!itemToEdit) return;
-
-    try {
-      const response = await fetch(`/api/items/${itemToEdit._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: editedItemTitle,
-          description: editedItemDescription,
-        }),
-      });
-      if (!response.ok) throw new Error("Failed to update item.");
-      const updatedItem = await response.json();
-
-      // Update the item in the local state
-      setItems(
-        items.map((item) => (item._id === updatedItem._id ? updatedItem : item))
-      );
-      setItemToEdit(null); // Close the modal
-    } catch (err: any) {
-      alert(`Error: ${err.message}`);
-    }
-  };
-
-  // Submits the delete request for an item
-  const handleDeleteItem = async () => {
-    if (!itemToDelete) return;
-
-    try {
-      const response = await fetch(`/api/items/${itemToDelete._id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) throw new Error("Failed to delete item.");
-
-      // Remove the item from the local state
-      setItems(items.filter((item) => item._id !== itemToDelete._id));
-      setItemToDelete(null); // Close the modal
-    } catch (err: any) {
-      alert(`Error: ${err.message}`);
     }
   };
 
@@ -572,85 +514,6 @@ export default function PlaylistPage() {
             </button>
           </div>
         </form>
-      </Modal>
-
-      {/* Edit Item Modal */}
-      <Modal isOpen={!!itemToEdit} onClose={() => setItemToEdit(null)}>
-        <h2 className="text-2xl font-bold mb-4">Edit Item</h2>
-        <form onSubmit={handleUpdateItem}>
-          <div className="mb-4">
-            <label
-              htmlFor="edit-item-title"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Title
-            </label>
-            <input
-              type="text"
-              id="edit-item-title"
-              value={editedItemTitle}
-              onChange={(e) => setEditedItemTitle(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-              required
-            />
-          </div>
-          <div className="mb-6">
-            <label
-              htmlFor="edit-item-description"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Description
-            </label>
-            <textarea
-              id="edit-item-description"
-              value={editedItemDescription}
-              onChange={(e) => setEditedItemDescription(e.target.value)}
-              rows={4}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-              required
-            ></textarea>
-          </div>
-          <div className="flex justify-end gap-4">
-            <button
-              type="button"
-              onClick={() => setItemToEdit(null)}
-              className="py-2 px-4 bg-gray-200 rounded-md"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="py-2 px-4 bg-blue-500 text-white font-bold rounded-md"
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Delete Item Confirmation Modal */}
-      <Modal isOpen={!!itemToDelete} onClose={() => setItemToDelete(null)}>
-        <h2 className="text-2xl font-bold mb-4">Delete Item?</h2>
-        <p className="text-gray-700 mb-6">
-          Are you sure you want to permanently delete this item? This action
-          cannot be undone.
-        </p>
-        <div className="flex justify-end gap-4">
-          <button
-            type="button"
-            onClick={() => setItemToDelete(null)}
-            className="py-2 px-4 bg-gray-200 rounded-md"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleDeleteItem}
-            className="py-2 px-4 bg-red-500 text-white font-bold rounded-md"
-          >
-            Yes, Delete
-          </button>
-        </div>
       </Modal>
     </div>
   );

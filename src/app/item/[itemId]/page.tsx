@@ -219,40 +219,36 @@ export default function ItemDetailPage() {
       <Modal
         isOpen={isNotesModalOpen}
         onClose={() => setIsNotesModalOpen(false)}
+        // Pass custom classes to make this modal instance wider and taller
+        className="w-11/12 max-w-5xl h-[85vh] p-6 flex flex-col"
       >
-        {/* --- CHANGES START HERE --- */}
-        <div className="w-11/12 lg:w-2/3 max-w-5xl h-[85vh] flex flex-col">
-          {" "}
-          {/* Width classes changed for responsiveness */}
-          <h2 className="text-2xl font-bold mb-4 flex-shrink-0">Edit Notes</h2>
-          <form
-            onSubmit={handleUpdateItem}
-            className="flex flex-col flex-grow min-h-0" /* Flexbox classes adjusted to prevent overflow */
-          >
-            <textarea
-              value={editedNotes}
-              onChange={(e) => setEditedNotes(e.target.value)}
-              className="w-full p-3 border rounded-md flex-grow resize-none"
-              placeholder="Start writing your notes here..."
-            />
-            <div className="flex justify-end gap-4 mt-4 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsNotesModalOpen(false)}
-                className="py-2 px-4 bg-gray-200 hover:bg-gray-300 rounded-md"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md"
-              >
-                Save Notes
-              </button>
-            </div>
-          </form>
-        </div>
-        {/* --- CHANGES END HERE --- */}
+        <h2 className="text-2xl font-bold mb-4 flex-shrink-0">Edit Notes</h2>
+        <form
+          onSubmit={handleUpdateItem}
+          className="flex flex-col flex-grow min-h-0"
+        >
+          <textarea
+            value={editedNotes}
+            onChange={(e) => setEditedNotes(e.target.value)}
+            className="w-full p-3 border rounded-md flex-grow resize-none"
+            placeholder="Start writing your notes here..."
+          />
+          <div className="flex justify-end gap-4 mt-4 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsNotesModalOpen(false)}
+              className="py-2 px-4 bg-gray-200 hover:bg-gray-300 rounded-md"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md"
+            >
+              Save Notes
+            </button>
+          </div>
+        </form>
       </Modal>
 
       {/* Delete Confirmation Modal - FIXED */}

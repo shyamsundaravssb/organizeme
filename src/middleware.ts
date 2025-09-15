@@ -2,36 +2,36 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
   const token = request.cookies.get("token")?.value;
 
-  // Define protected and public routes
-  const protectedRoutes = ["/dashboard", "/playlists"];
-  const publicRoutes = ["/login", "/register", "/"];
+  const publicPaths = ["/login", "/register", "/profile"];
+  const isPublicPath =
+    publicPaths.some((p) => path.startsWith(p)) || path === "/";
 
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
-  );
-  const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname);
+  // Paths that a logged-in user should be redirected away from
+  const authAndRootPaths = ["/login", "/register", "/"];
 
-  // 1. Redirect to login if accessing a protected route without a token
-  if (isProtectedRoute && !token) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  // --- Logic for logged-in users ---
+  if (token) {
+    // If a logged-in user is on the homepage, login, or register page,
+    // redirect them to the dashboard.
+    if (authAndRootPaths.includes(path)) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  }
+  // --- Logic for logged-out users ---
+  else {
+    // If a logged-out user tries to access any non-public page,
+    // redirect them to login.
+    if (!isPublicPath) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
   }
 
-  // 2. Redirect to dashboard if logged in and trying to access a public auth page
-  if (token && isPublicRoute) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  // 3. New: Redirect from the homepage to login if there is no token
-  if (request.nextUrl.pathname === "/" && !token) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  // Continue to the next handler if no redirect is needed
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$).*)"],
 };
