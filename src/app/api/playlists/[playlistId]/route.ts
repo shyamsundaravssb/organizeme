@@ -4,44 +4,54 @@ import Playlist from "@/models/Playlist";
 import Item from "@/models/Item";
 import { getAuthenticatedUser } from "@/lib/getAuthenticatedUser";
 
-// GET: Fetch a single playlist AND its contents by its ID
+// GET: Fetch a single playlist and its contents (handles public/private access)
 export async function GET(
   request: NextRequest,
   { params }: { params: { playlistId: string } }
 ) {
   await dbConnect();
   try {
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-
     const { playlistId } = await params;
+    const user = await getAuthenticatedUser(); // May be null if user is not logged in
 
-    // 1. Find the main playlist and verify ownership
-    const playlist = await Playlist.findOne({
-      _id: playlistId,
-      owner: user._id,
-    });
+    // 1. Find the playlist first, without checking for ownership yet
+    const playlist = await Playlist.findById(playlistId).populate(
+      "owner",
+      "username"
+    ); // <-- UPDATED
 
     if (!playlist) {
       return NextResponse.json(
-        { message: "Playlist not found or permission denied" },
+        { message: "Playlist not found" },
         { status: 404 }
       );
     }
 
-    // 2. Find all direct children (sub-playlists and items)
-    const subPlaylists = await Playlist.find({
-      parent: playlistId,
-      owner: user._id,
-    });
-    const items = await Item.find({
-      parentPlaylist: playlistId,
-      owner: user._id,
-    });
+    // 2. Check for access rights
+    const isOwner = user && user._id.equals(playlist.owner._id);
+    if (playlist.visibility === "private" && !isOwner) {
+      return NextResponse.json(
+        { message: "You do not have permission to view this playlist" },
+        { status: 404 } // Use 404 to avoid revealing private content exists
+      );
+    }
 
-    // 3. Return all data in a single object
+    // 3. Fetch contents based on access level
+    const items = await Item.find({ parentPlaylist: playlistId });
+    let subPlaylists;
+
+    if (isOwner) {
+      // The owner sees ALL of their sub-playlists (public and private)
+      subPlaylists = await Playlist.find({ parent: playlistId });
+    } else {
+      // Public viewers ONLY see sub-playlists that are also public
+      subPlaylists = await Playlist.find({
+        parent: playlistId,
+        visibility: "public",
+      });
+    }
+
+    // 4. Return all data
     return NextResponse.json(
       { playlist, subPlaylists, items },
       { status: 200 }

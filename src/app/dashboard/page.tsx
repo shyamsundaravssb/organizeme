@@ -20,6 +20,8 @@ export default function DashboardPage() {
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("");
   const router = useRouter();
 
+  const [searchUsername, setSearchUsername] = useState("");
+
   // 1. Data Fetching Logic
   useEffect(() => {
     const fetchPlaylists = async () => {
@@ -83,10 +85,18 @@ export default function DashboardPage() {
         throw new Error("Logout failed.");
       }
 
-      // On successful logout, redirect to the login page
-      router.push("/login");
+      // On successful logout, redirect to the home page
+      router.push("/");
     } catch (err: any) {
       alert(`Error: ${err.message}`);
+    }
+  };
+
+  // --- NEW HANDLER for the search form ---
+  const handleSearch = (e: FormEvent) => {
+    e.preventDefault();
+    if (searchUsername.trim()) {
+      router.push(`/profile/${searchUsername.trim()}`);
     }
   };
 
@@ -97,25 +107,46 @@ export default function DashboardPage() {
   // 4. Main Component Render
   return (
     <div className="container mx-auto p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Your Playlists</h1>
-        {/* Container for the action buttons */}
-        <div className="flex gap-4">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          >
-            + New Playlist
-          </button>
-          {/* The new Logout button */}
-          <button
-            onClick={handleLogout}
-            className="bg-gray-200 hover:bg-gray-300 text-black font-bold py-2 px-4 rounded"
-          >
-            Logout
-          </button>
+      <div className="border-b pb-6 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold">Your Playlists</h1>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              + New Playlist
+            </button>
+            <button
+              onClick={handleLogout}
+              className="bg-gray-200 hover:bg-gray-300 text-black font-bold py-2 px-4 rounded"
+            >
+              Logout
+            </button>
+          </div>
         </div>
+
+        {/* --- NEW SEARCH BAR --- */}
+        <form
+          onSubmit={handleSearch}
+          className="flex items-center w-full max-w-lg mt-4"
+        >
+          <input
+            type="text"
+            value={searchUsername}
+            onChange={(e) => setSearchUsername(e.target.value)}
+            placeholder="Find other users by username..."
+            className="w-full px-4 py-2 text-base border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="submit"
+            className="px-5 py-2 bg-gray-700 hover:bg-gray-800 text-white font-semibold text-base rounded-r-md transition-colors"
+          >
+            Search
+          </button>
+        </form>
       </div>
+
       {/* Playlist Grid/List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {playlists.length > 0 ? (

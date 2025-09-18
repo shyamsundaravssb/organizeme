@@ -1,32 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/db/dbConnect";
-import Item from "@/models/Item";
+import Item, { IItem } from "@/models/Item";
+import Playlist, { IPlaylist } from "@/models/Playlist";
 import { getAuthenticatedUser } from "@/lib/getAuthenticatedUser";
 
-// NEW - GET: Fetch a single item by its ID
+// GET: Fetch a single item, handling public/private access
 export async function GET(
   request: NextRequest,
   { params }: { params: { itemId: string } }
 ) {
   await dbConnect();
   try {
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-
     const { itemId } = await params;
+    const user = await getAuthenticatedUser();
 
-    // Find the item and verify ownership
-    const item = await Item.findOne({ _id: itemId, owner: user._id });
+    // 1. Find the item and its parent playlist data in one go
+    const item = await Item.findById(itemId).populate<{
+      parentPlaylist: IPlaylist;
+    }>("parentPlaylist");
 
     if (!item) {
+      return NextResponse.json({ message: "Item not found" }, { status: 404 });
+    }
+
+    // 2. Check for access rights
+    const isOwner = user && user._id.equals(item.owner);
+    if (item.parentPlaylist.visibility === "private" && !isOwner) {
       return NextResponse.json(
-        { message: "Item not found or permission denied" },
+        { message: "You do not have permission to view this item" },
         { status: 404 }
       );
     }
 
+    // 3. If parent is public OR the user is the owner, return the item
     return NextResponse.json(item, { status: 200 });
   } catch (error) {
     return NextResponse.json(
@@ -36,7 +42,7 @@ export async function GET(
   }
 }
 
-// PUT: Update a specific item
+// PUT: Update a specific item and return the populated document
 export async function PUT(
   request: NextRequest,
   { params }: { params: { itemId: string } }
@@ -58,8 +64,9 @@ export async function PUT(
       );
     }
 
+    // First, update the item
     const updatedItem = await Item.findOneAndUpdate(
-      { _id: itemId, owner: user._id }, // Security: Ensures you can only update your own items
+      { _id: itemId, owner: user._id },
       { title, description, notes },
       { new: true }
     );
@@ -71,7 +78,13 @@ export async function PUT(
       );
     }
 
-    return NextResponse.json(updatedItem, { status: 200 });
+    // Now, find the updated item again to populate its parentPlaylist field
+    const populatedItem = await Item.findById(updatedItem._id).populate<{
+      parentPlaylist: IPlaylist;
+    }>("parentPlaylist");
+
+    // Return the fully populated item
+    return NextResponse.json(populatedItem, { status: 200 });
   } catch (error) {
     return NextResponse.json(
       { message: "Error updating item", error },
