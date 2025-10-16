@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Button from "@/app/components/ui/Button";
+import Card from "@/app/components/ui/Card";
 import Link from "next/link";
 
 // Define a type for the playlist data we expect
@@ -90,25 +91,23 @@ export default function ProfilePage() {
       <p className="text-text-secondary mb-8">
         Browse all public playlists created by this user.
       </p>
-
-      {/* --- REFACTORED: Playlist Cards --- */}
+      {/* --- REFACTORED: Replaced <div> with <Card> component --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {playlists.length > 0 ? (
           playlists.map((playlist) => (
-            <Link
+            <Card
+              as={Link}
               href={`/playlist/${playlist._id}`}
               key={playlist._id}
-              className="block"
+              className="block p-6 cursor-pointer hover:shadow-lg hover:scale-[1.02] h-full"
             >
-              <div className="p-6 bg-surface rounded-lg shadow-md hover:shadow-lg border border-border cursor-pointer transition-all hover:scale-[1.02] h-full">
-                <h2 className="text-xl font-semibold mb-2 text-text-primary">
-                  {playlist.title}
-                </h2>
-                <p className="text-text-secondary line-clamp-2">
-                  {playlist.description || "No description"}
-                </p>
-              </div>
-            </Link>
+              <h2 className="text-xl font-semibold mb-2 text-text-primary">
+                {playlist.title}
+              </h2>
+              <p className="text-text-secondary line-clamp-2">
+                {playlist.description || "No description"}
+              </p>
+            </Card>
           ))
         ) : (
           <p className="col-span-full text-center text-text-secondary py-16">

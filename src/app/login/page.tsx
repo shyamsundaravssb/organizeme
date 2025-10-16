@@ -4,6 +4,7 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Button from "../components/ui/Button"; // Import the Button component
+import Card from "../components/ui/Card";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -44,7 +45,6 @@ export default function Login() {
   };
 
   return (
-    // --- REFACTORED: Use theme background ---
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
@@ -56,8 +56,8 @@ export default function Login() {
           </p>
         </div>
 
-        {/* --- REFACTORED: Use theme styles for card --- */}
-        <div className="rounded-lg bg-surface p-8 shadow-lg border border-border">
+        {/* --- REFACTORED: Replaced <div> with <Card> component --- */}
+        <Card className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && <p className="text-center text-sm text-error">{error}</p>}
 
@@ -68,7 +68,6 @@ export default function Login() {
               >
                 Email
               </label>
-              {/* --- REFACTORED: Use theme styles for inputs --- */}
               <input
                 type="email"
                 id="email"
@@ -96,7 +95,6 @@ export default function Login() {
               />
             </div>
 
-            {/* --- REFACTORED: Replaced <button> with <Button> component --- */}
             <Button
               type="submit"
               variant="primary"
@@ -112,9 +110,8 @@ export default function Login() {
               Forgot Password?
             </Button>
           </div>
-        </div>
+        </Card>
 
-        {/* --- REFACTORED: Use theme colors for link --- */}
         <p className="mt-8 text-center text-sm text-text-secondary">
           Don't have an account?{" "}
           <Link

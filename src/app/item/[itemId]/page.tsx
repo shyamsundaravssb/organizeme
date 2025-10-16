@@ -4,6 +4,7 @@ import { useState, useEffect, FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Modal from "@/app/components/Modal";
 import Button from "@/app/components/ui/Button";
+import Card from "@/app/components/ui/Card";
 
 interface User {
   _id: string;
@@ -163,8 +164,8 @@ export default function ItemDetailPage() {
         )}
       </div>
 
-      {/* --- REFACTORED: Content Card --- */}
-      <div className="bg-surface p-6 sm:p-8 rounded-lg shadow-lg border border-border">
+      {/* --- REFACTORED: Replaced <div> with <Card> component --- */}
+      <Card className="p-6 sm:p-8">
         <h1 className="text-4xl font-bold text-text-primary">{item.title}</h1>
         <p className="text-lg text-text-secondary mt-2 pb-6 border-b border-border">
           {item.description}
@@ -177,7 +178,7 @@ export default function ItemDetailPage() {
             <p>{item.notes || "No notes have been added yet."}</p>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* --- REFACTORED: Modal Forms & Buttons --- */}
       {isOwner && (

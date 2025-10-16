@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
 
 export default function ResetPassword() {
   const router = useRouter();
@@ -60,7 +61,6 @@ export default function ResetPassword() {
   };
 
   return (
-    // --- REFACTORED: Use theme background ---
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
@@ -72,8 +72,8 @@ export default function ResetPassword() {
           </p>
         </div>
 
-        {/* --- REFACTORED: Use theme styles for card --- */}
-        <div className="rounded-lg bg-surface p-8 shadow-lg border border-border">
+        {/* --- REFACTORED: Replaced <div> with <Card> component --- */}
+        <Card className="p-8 shadow-lg">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && <p className="text-center text-sm text-error">{error}</p>}
             {success && (
@@ -87,7 +87,6 @@ export default function ResetPassword() {
               >
                 New Password
               </label>
-              {/* --- REFACTORED: Use theme styles for inputs --- */}
               <input
                 type="password"
                 id="password"
@@ -115,7 +114,6 @@ export default function ResetPassword() {
               />
             </div>
 
-            {/* --- REFACTORED: Replaced <button> with <Button> component --- */}
             <Button
               type="submit"
               variant="primary"
@@ -125,7 +123,7 @@ export default function ResetPassword() {
               {isLoading ? "Resetting..." : "Reset Password"}
             </Button>
           </form>
-        </div>
+        </Card>
       </div>
     </div>
   );

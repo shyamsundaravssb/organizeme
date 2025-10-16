@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "../components/ui/Button";
 import Link from "next/link";
+import Card from "../components/ui/Card";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -75,7 +76,6 @@ export default function Register() {
   };
 
   return (
-    // --- REFACTORED: Use theme background ---
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
@@ -87,15 +87,15 @@ export default function Register() {
           </p>
         </div>
 
-        {/* --- REFACTORED: Use theme styles for card --- */}
-        <div className="rounded-lg bg-surface p-8 shadow-lg border border-border">
+        {/* --- REFACTORED: Replaced <div> with <Card> component --- */}
+        <Card className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && <p className="text-center text-sm text-error">{error}</p>}
             {success && (
               <p className="text-center text-sm text-success">{success}</p>
             )}
 
-            {/* Form Fields with new theme styles */}
+            {/* Form Fields are already using theme styles */}
             <div>
               <label
                 htmlFor="name"
@@ -164,7 +164,6 @@ export default function Register() {
               />
             </div>
 
-            {/* --- REFACTORED: Replaced <button> with <Button> component --- */}
             <Button
               type="submit"
               variant="primary"
@@ -174,7 +173,7 @@ export default function Register() {
               {isLoading ? "Registering..." : "Create Account"}
             </Button>
           </form>
-        </div>
+        </Card>
 
         <p className="mt-8 text-center text-sm text-text-secondary">
           Already have an account?{" "}

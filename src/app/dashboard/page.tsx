@@ -3,6 +3,7 @@
 import Button from "../components/ui/Button";
 import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Card from "../components/ui/Card";
 import Modal from "../components/Modal";
 import Link from "next/link";
 
@@ -156,10 +157,11 @@ export default function DashboardPage() {
         </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* New "Create Playlist" Card */}
-          <button
+          {/* --- REFACTORED: "Create Playlist" Card --- */}
+          <Card
+            as="button"
             onClick={() => setIsModalOpen(true)}
-            className="flex flex-col items-center justify-center p-6 bg-surface-secondary hover:bg-border border-2 border-dashed border-border rounded-lg transition-colors text-text-secondary hover:text-text-primary"
+            className="flex flex-col items-center justify-center p-6 bg-surface-secondary hover:bg-border border-2 border-dashed border-border transition-colors text-text-secondary hover:text-text-primary"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -176,24 +178,23 @@ export default function DashboardPage() {
               />
             </svg>
             <span className="font-semibold">New Playlist</span>
-          </button>
+          </Card>
 
-          {/* Existing Playlist Cards */}
+          {/* --- REFACTORED: Existing Playlist Cards --- */}
           {playlists.map((playlist) => (
-            <Link
+            <Card
+              as={Link}
               href={`/playlist/${playlist._id}`}
               key={playlist._id}
-              className="block"
+              className="p-6 cursor-pointer hover:shadow-lg hover:scale-[1.02] h-full"
             >
-              <div className="p-6 bg-surface rounded-lg shadow-md hover:shadow-lg border border-border cursor-pointer transition-all hover:scale-[1.02] h-full">
-                <h2 className="text-xl font-semibold mb-2 text-text-primary">
-                  {playlist.title}
-                </h2>
-                <p className="text-text-secondary line-clamp-2">
-                  {playlist.description || "No description"}
-                </p>
-              </div>
-            </Link>
+              <h2 className="text-xl font-semibold mb-2 text-text-primary">
+                {playlist.title}
+              </h2>
+              <p className="text-text-secondary line-clamp-2">
+                {playlist.description || "No description"}
+              </p>
+            </Card>
           ))}
         </div>
 

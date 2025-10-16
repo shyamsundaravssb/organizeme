@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import Link from "next/link";
 import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -47,7 +48,8 @@ export default function ForgotPassword() {
           </p>
         </div>
 
-        <div className="rounded-lg bg-surface p-8 shadow-lg border border-border">
+        {/* --- REFACTORED: Replaced <div> with <Card> component --- */}
+        <Card className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && <p className="text-center text-sm text-error">{error}</p>}
             {success && (
@@ -79,7 +81,7 @@ export default function ForgotPassword() {
               {isLoading ? "Sending..." : "Send Reset Link"}
             </Button>
           </form>
-        </div>
+        </Card>
 
         <div className="mt-6 text-center">
           <Button as={Link} href="/login" variant="ghost">

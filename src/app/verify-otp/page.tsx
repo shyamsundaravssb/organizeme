@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Button from "../components/ui/Button";
 import Link from "next/link";
+import Card from "../components/ui/Card";
 
 export default function VerifyOtp() {
   const router = useRouter();
@@ -64,7 +65,8 @@ export default function VerifyOtp() {
           </p>
         </div>
 
-        <div className="rounded-lg bg-surface p-8 shadow-lg border border-border">
+        {/* --- REFACTORED: Replaced <div> with <Card> component --- */}
+        <Card className="p-8 shadow-lg">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && <p className="text-center text-sm text-error">{error}</p>}
             {success && (
@@ -97,7 +99,8 @@ export default function VerifyOtp() {
               {isLoading ? "Verifying..." : "Verify Email"}
             </Button>
           </form>
-        </div>
+        </Card>
+
         <p className="mt-8 text-center text-sm text-text-secondary">
           Didn't receive the email?{" "}
           <Link
