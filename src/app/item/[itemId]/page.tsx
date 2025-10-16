@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Modal from "@/app/components/Modal";
+import Button from "@/app/components/ui/Button";
 
 interface User {
   _id: string;
@@ -131,72 +132,68 @@ export default function ItemDetailPage() {
     }
   };
 
-  if (isLoading) return <p>Loading item...</p>;
-  if (error) return <p>Error: {error}</p>;
-  if (!item) return <p>Item not found.</p>;
+  if (isLoading) return <p className="text-center p-8">Loading item...</p>;
+  if (error)
+    return <p className="text-center p-8 text-error">Error: {error}</p>;
+  if (!item) return <p className="text-center p-8">Item not found.</p>;
 
   return (
-    <div className="container mx-auto p-8">
-      {/* Navigation and Actions */}
-      <div className="flex justify-between items-center mb-6">
-        <button
+    <div className="container mx-auto p-4 sm:p-8">
+      {/* --- REFACTORED: Header and Action Buttons --- */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
+        <Button
+          variant="ghost"
           onClick={() => router.push(`/playlist/${item.parentPlaylist._id}`)}
-          className="text-blue-500 hover:underline flex items-center"
+          className="self-start"
         >
           &larr; Back to Playlist
-        </button>
-        {/* --- CONDITIONAL RENDER FOR OWNER CONTROLS --- */}
+        </Button>
         {isOwner && (
-          <div className="flex gap-4">
-            <button
-              onClick={handleOpenDetailsModal}
-              className="bg-gray-200 hover:bg-gray-300 text-black font-bold py-2 px-4 rounded"
-            >
+          <div className="flex gap-2 sm:gap-4">
+            <Button variant="secondary" onClick={handleOpenDetailsModal}>
               Edit Details
-            </button>
-            <button
-              onClick={handleOpenNotesModal}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            >
+            </Button>
+            <Button variant="primary" onClick={handleOpenNotesModal}>
               Edit Notes
-            </button>
-            <button
-              onClick={() => setIsDeleteModalOpen(true)}
-              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-            >
+            </Button>
+            <Button destructive onClick={() => setIsDeleteModalOpen(true)}>
               Delete
-            </button>
+            </Button>
           </div>
         )}
       </div>
 
-      {/* Item Content Display */}
-      <div className="bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-4xl font-bold">{item.title}</h1>
-        <p className="text-lg text-gray-600 mt-2 pb-6 border-b">
+      {/* --- REFACTORED: Content Card --- */}
+      <div className="bg-surface p-6 sm:p-8 rounded-lg shadow-lg border border-border">
+        <h1 className="text-4xl font-bold text-text-primary">{item.title}</h1>
+        <p className="text-lg text-text-secondary mt-2 pb-6 border-b border-border">
           {item.description}
         </p>
-        <div className="mt-6 prose max-w-none">
-          <h2 className="text-2xl font-semibold mb-4">Notes</h2>
-          <p>{item.notes || "No notes have been added yet."}</p>
+        <div className="mt-6">
+          <h2 className="text-2xl font-semibold mb-4 text-text-primary">
+            Notes
+          </h2>
+          <div className="prose prose-lg max-w-none text-text-secondary">
+            <p>{item.notes || "No notes have been added yet."}</p>
+          </div>
         </div>
       </div>
 
-      {/* Modals */}
-      {/* --- CONDITIONAL RENDER FOR MODALS --- */}
+      {/* --- REFACTORED: Modal Forms & Buttons --- */}
       {isOwner && (
         <>
-          {/* Edit Details Modal - FIXED */}
           <Modal
             isOpen={isDetailsModalOpen}
             onClose={() => setIsDetailsModalOpen(false)}
           >
-            <h2 className="text-2xl font-bold mb-4">Edit Details</h2>
-            <form onSubmit={handleUpdateItem}>
-              <div className="mb-4">
+            <h2 className="text-2xl font-bold mb-4 text-text-primary">
+              Edit Details
+            </h2>
+            <form onSubmit={handleUpdateItem} className="space-y-4">
+              <div>
                 <label
                   htmlFor="edit-title"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-semibold text-text-secondary"
                 >
                   Title
                 </label>
@@ -205,14 +202,14 @@ export default function ItemDetailPage() {
                   id="edit-title"
                   value={editedTitle}
                   onChange={(e) => setEditedTitle(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                  className="mt-1 block w-full px-3 py-2 bg-surface border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                 />
               </div>
-              <div className="mb-6">
+              <div>
                 <label
                   htmlFor="edit-description"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-semibold text-text-secondary"
                 >
                   Description
                 </label>
@@ -221,36 +218,31 @@ export default function ItemDetailPage() {
                   value={editedDescription}
                   onChange={(e) => setEditedDescription(e.target.value)}
                   rows={3}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                  className="mt-1 block w-full px-3 py-2 bg-surface border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                 ></textarea>
               </div>
-              <div className="flex justify-end gap-4">
-                <button
+              <div className="flex justify-end gap-4 pt-4">
+                <Button
+                  variant="ghost"
                   type="button"
                   onClick={() => setIsDetailsModalOpen(false)}
-                  className="py-2 px-4 bg-gray-200 hover:bg-gray-300 rounded-md"
                 >
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md"
-                >
+                </Button>
+                <Button variant="primary" type="submit">
                   Save Changes
-                </button>
+                </Button>
               </div>
             </form>
           </Modal>
 
-          {/* Notes Editor Modal - FIXED */}
           <Modal
             isOpen={isNotesModalOpen}
             onClose={() => setIsNotesModalOpen(false)}
-            // Pass custom classes to make this modal instance wider and taller
             className="w-11/12 max-w-5xl h-[85vh] p-6 flex flex-col"
           >
-            <h2 className="text-2xl font-bold mb-4 flex-shrink-0">
+            <h2 className="text-2xl font-bold mb-4 flex-shrink-0 text-text-primary">
               Edit Notes
             </h2>
             <form
@@ -260,51 +252,45 @@ export default function ItemDetailPage() {
               <textarea
                 value={editedNotes}
                 onChange={(e) => setEditedNotes(e.target.value)}
-                className="w-full p-3 border rounded-md flex-grow resize-none"
+                className="w-full p-3 border border-border rounded-md flex-grow resize-none bg-surface-secondary"
                 placeholder="Start writing your notes here..."
               />
               <div className="flex justify-end gap-4 mt-4 flex-shrink-0">
-                <button
+                <Button
+                  variant="ghost"
                   type="button"
                   onClick={() => setIsNotesModalOpen(false)}
-                  className="py-2 px-4 bg-gray-200 hover:bg-gray-300 rounded-md"
                 >
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md"
-                >
+                </Button>
+                <Button variant="primary" type="submit">
                   Save Notes
-                </button>
+                </Button>
               </div>
             </form>
           </Modal>
 
-          {/* Delete Confirmation Modal - FIXED */}
           <Modal
             isOpen={isDeleteModalOpen}
             onClose={() => setIsDeleteModalOpen(false)}
           >
-            <h2 className="text-2xl font-bold mb-4">Delete Item?</h2>
-            <p className="text-gray-700 mb-6">
+            <h2 className="text-2xl font-bold mb-4 text-text-primary">
+              Delete Item?
+            </h2>
+            <p className="text-text-secondary mb-6">
               This action is permanent and cannot be undone.
             </p>
             <div className="flex justify-end gap-4">
-              <button
+              <Button
+                variant="secondary"
                 type="button"
                 onClick={() => setIsDeleteModalOpen(false)}
-                className="py-2 px-4 bg-gray-200 hover:bg-gray-300 rounded-md"
               >
                 Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteItem}
-                className="py-2 px-4 bg-red-500 hover:bg-red-700 text-white font-bold rounded-md"
-              >
+              </Button>
+              <Button destructive type="button" onClick={handleDeleteItem}>
                 Yes, Delete
-              </button>
+              </Button>
             </div>
           </Modal>
         </>

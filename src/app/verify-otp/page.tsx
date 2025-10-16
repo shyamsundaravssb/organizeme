@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Button from "../components/ui/Button";
 import Link from "next/link";
 
 export default function VerifyOtp() {
@@ -51,50 +52,57 @@ export default function VerifyOtp() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
-        <h1 className="mb-6 text-center text-3xl font-bold">
-          Verify Your Email
-        </h1>
-        <p className="mb-4 text-center text-gray-600">
-          An OTP has been sent to your email:{" "}
-          <span className="font-semibold">{email}</span>
-        </p>
-        <form onSubmit={handleSubmit}>
-          {error && <p className="mb-4 text-center text-red-500">{error}</p>}
-          {success && (
-            <p className="mb-4 text-center text-green-500">{success}</p>
-          )}
-          <div className="mb-4">
-            <label
-              htmlFor="otp"
-              className="mb-2 block font-semibold text-gray-700"
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-text-primary">
+            Verify Your Email
+          </h1>
+          <p className="text-text-secondary mt-2">
+            An OTP has been sent to your email:{" "}
+            <span className="font-semibold text-text-primary">{email}</span>
+          </p>
+        </div>
+
+        <div className="rounded-lg bg-surface p-8 shadow-lg border border-border">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && <p className="text-center text-sm text-error">{error}</p>}
+            {success && (
+              <p className="text-center text-sm text-success">{success}</p>
+            )}
+
+            <div>
+              <label
+                htmlFor="otp"
+                className="mb-2 block text-center text-sm font-semibold text-text-secondary"
+              >
+                Enter 6-Digit OTP
+              </label>
+              <input
+                type="text"
+                id="otp"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                required
+                maxLength={6}
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-center text-2xl tracking-[0.5em] text-text-primary focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={isLoading}
+              className="w-full"
             >
-              Enter OTP
-            </label>
-            <input
-              type="text"
-              id="otp"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              required
-              maxLength={6}
-              className="w-full rounded border px-3 py-2 text-center text-gray-700 focus:outline-none focus:ring focus:ring-blue-300"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full rounded-lg bg-blue-500 py-2 font-bold text-white transition duration-200 hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300 disabled:opacity-50"
-          >
-            {isLoading ? "Verifying..." : "Verify Email"}
-          </button>
-        </form>
-        <p className="mt-4 text-center text-sm text-gray-600">
+              {isLoading ? "Verifying..." : "Verify Email"}
+            </Button>
+          </form>
+        </div>
+        <p className="mt-8 text-center text-sm text-text-secondary">
           Didn't receive the email?{" "}
           <Link
             href="/resend-otp"
-            className="font-semibold text-blue-500 hover:underline"
+            className="font-semibold text-primary hover:underline"
           >
             Resend OTP
           </Link>

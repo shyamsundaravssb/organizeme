@@ -1,12 +1,12 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: ReactNode;
-  className?: string; // <-- Add optional className prop
+  className?: string;
 }
 
 export default function Modal({
@@ -15,16 +15,32 @@ export default function Modal({
   children,
   className = "w-full max-w-md",
 }: ModalProps) {
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("keydown", handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
+    // The 'backdrop-blur-sm' class has been removed from this line
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+      className="fixed inset-0 bg-black/20 backdrop-blur-sm flex justify-center items-center z-50 animate-in fade-in-0 transition-opacity duration-300"
       onClick={onClose}
     >
-      {/* The new className prop is used here to allow custom sizing */}
       <div
-        className={`bg-white p-8 rounded-lg shadow-xl ${className}`}
+        className={`bg-white p-6 sm:p-8 rounded-lg shadow-xl border border-border animate-modal-in ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

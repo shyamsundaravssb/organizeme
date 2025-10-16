@@ -11,6 +11,7 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.12",
     "bcryptjs": "^3.0.2",
+    "clsx": "^2.1.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.17.2",
     "next": "15.5.0",

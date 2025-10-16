@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import Button from "../components/ui/Button";
 
 export default function ResetPassword() {
   const router = useRouter();
@@ -60,54 +60,72 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
-        <h1 className="mb-6 text-center text-3xl font-bold">Reset Password</h1>
-        <form onSubmit={handleSubmit}>
-          {error && <p className="mb-4 text-center text-red-500">{error}</p>}
-          {success && (
-            <p className="mb-4 text-center text-green-500">{success}</p>
-          )}
-          <div className="mb-4">
-            <label
-              htmlFor="password"
-              className="mb-2 block font-semibold text-gray-700"
+    // --- REFACTORED: Use theme background ---
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-text-primary">
+            Reset Your Password
+          </h1>
+          <p className="text-text-secondary mt-2">
+            Enter and confirm your new password below.
+          </p>
+        </div>
+
+        {/* --- REFACTORED: Use theme styles for card --- */}
+        <div className="rounded-lg bg-surface p-8 shadow-lg border border-border">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && <p className="text-center text-sm text-error">{error}</p>}
+            {success && (
+              <p className="text-center text-sm text-success">{success}</p>
+            )}
+
+            <div>
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-semibold text-text-secondary"
+              >
+                New Password
+              </label>
+              {/* --- REFACTORED: Use theme styles for inputs --- */}
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="mb-2 block text-sm font-semibold text-text-secondary"
+              >
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            {/* --- REFACTORED: Replaced <button> with <Button> component --- */}
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={isLoading}
+              className="w-full"
             >
-              New Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full rounded border px-3 py-2 text-gray-700 focus:outline-none focus:ring focus:ring-blue-300"
-            />
-          </div>
-          <div className="mb-6">
-            <label
-              htmlFor="confirmPassword"
-              className="mb-2 block font-semibold text-gray-700"
-            >
-              Confirm New Password
-            </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="w-full rounded border px-3 py-2 text-gray-700 focus:outline-none focus:ring focus:ring-blue-300"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full rounded-lg bg-blue-500 py-2 font-bold text-white transition duration-200 hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300 disabled:opacity-50"
-          >
-            {isLoading ? "Resetting..." : "Reset Password"}
-          </button>
-        </form>
+              {isLoading ? "Resetting..." : "Reset Password"}
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   );

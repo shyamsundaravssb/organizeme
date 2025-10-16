@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Button from "@/app/components/ui/Button";
 import Link from "next/link";
 
 // Define a type for the playlist data we expect
@@ -61,29 +62,36 @@ export default function ProfilePage() {
   }, [username]);
 
   if (isLoading) {
-    return <div className="text-center p-10">Loading profile...</div>;
+    return (
+      <div className="text-center p-10 text-text-secondary">
+        Loading profile...
+      </div>
+    );
   }
-
   if (error) {
-    return <div className="text-center p-10 text-red-500">Error: {error}</div>;
+    return <div className="text-center p-10 text-error">Error: {error}</div>;
   }
 
   return (
-    <div className="container mx-auto p-8">
-      {/* --- UPDATED Back Button with conditional logic --- */}
-      <button
+    <div className="container mx-auto p-4 sm:p-8">
+      {/* --- REFACTORED: Back Button --- */}
+      <Button
+        variant="ghost"
         onClick={() => router.push(isLoggedIn ? "/dashboard" : "/")}
-        className="text-blue-500 hover:underline mb-6"
+        className="mb-6"
       >
         &larr; {isLoggedIn ? "Back to Dashboard" : "Back to Homepage"}
-      </button>
+      </Button>
 
-      <h1 className="text-4xl font-bold mb-2">{username}'s Public Playlists</h1>
-      <p className="text-gray-600 mb-8">
+      {/* --- REFACTORED: Header Text --- */}
+      <h1 className="text-4xl font-bold text-text-primary mb-2">
+        {username}'s Public Playlists
+      </h1>
+      <p className="text-text-secondary mb-8">
         Browse all public playlists created by this user.
       </p>
 
-      {/* Grid of Public Playlists */}
+      {/* --- REFACTORED: Playlist Cards --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {playlists.length > 0 ? (
           playlists.map((playlist) => (
@@ -92,16 +100,18 @@ export default function ProfilePage() {
               key={playlist._id}
               className="block"
             >
-              <div className="p-6 bg-white rounded-lg shadow-md hover:shadow-lg cursor-pointer transition-shadow h-full">
-                <h2 className="text-xl font-semibold mb-2">{playlist.title}</h2>
-                <p className="text-gray-600">
+              <div className="p-6 bg-surface rounded-lg shadow-md hover:shadow-lg border border-border cursor-pointer transition-all hover:scale-[1.02] h-full">
+                <h2 className="text-xl font-semibold mb-2 text-text-primary">
+                  {playlist.title}
+                </h2>
+                <p className="text-text-secondary line-clamp-2">
                   {playlist.description || "No description"}
                 </p>
               </div>
             </Link>
           ))
         ) : (
-          <p className="col-span-full text-center text-gray-500">
+          <p className="col-span-full text-center text-text-secondary py-16">
             This user hasn't made any playlists public yet.
           </p>
         )}

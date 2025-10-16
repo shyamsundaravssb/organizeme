@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Button from "./components/ui/Button";
 
 export default function HomePage() {
   const [username, setUsername] = useState("");
@@ -16,53 +17,70 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-      <div className="text-center p-8 w-full max-w-2xl">
-        <h1 className="text-5xl font-extrabold text-gray-800 mb-4">
+    <div className="flex flex-col items-center justify-center min-h-screen px-4">
+      <div className="text-center p-8 w-full max-w-3xl">
+        <h1 className="text-4xl md:text-6xl font-extrabold text-text-primary mb-4">
           Welcome to OrganizeMe
         </h1>
-        <p className="text-lg text-gray-600 mb-8">
+        <p className="text-lg md:text-xl text-text-secondary mb-10 max-w-xl mx-auto">
           Discover and explore public playlists from users around the world.
         </p>
 
-        {/* Search Bar */}
-        <form
-          onSubmit={handleSearch}
-          className="flex items-center justify-center w-full"
-        >
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Enter a username to search..."
-            className="w-full max-w-md px-4 py-3 text-lg border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            type="submit"
-            className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold text-lg rounded-r-md transition-colors"
-          >
-            Search
-          </button>
+        {/* --- REFINED: Search Bar --- */}
+        <form onSubmit={handleSearch} className="w-full max-w-lg mx-auto">
+          <div className="relative flex items-center shadow-md rounded-md">
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter a username to search..."
+              className="w-full pl-5 pr-12 py-3 text-lg bg-surface border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              type="submit"
+              className="absolute inset-y-0 right-0 flex items-center justify-center w-12 text-text-secondary hover:text-primary transition-colors"
+              aria-label="Search"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </button>
+          </div>
         </form>
 
-        {/* Login/Register Links */}
-        <div className="mt-12">
-          <p className="text-gray-700 mb-4">
+        {/* --- REFINED: Login/Register Buttons --- */}
+        <div className="mt-16">
+          <p className="text-text-primary mb-4">
             Have an account? Ready to create your own playlists?
           </p>
-          <div className="flex justify-center gap-4">
-            <Link
+          <div className="flex justify-center items-center gap-4">
+            <Button
+              as={Link}
               href="/login"
-              className="px-8 py-3 bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 font-semibold rounded-md transition-colors"
+              variant="secondary"
+              className="px-8 py-3"
             >
               Login
-            </Link>
-            <Link
+            </Button>
+            <Button
+              as={Link}
               href="/register"
-              className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-md transition-colors"
+              variant="primary"
+              className="px-8 py-3"
             >
               Register
-            </Link>
+            </Button>
           </div>
         </div>
       </div>
