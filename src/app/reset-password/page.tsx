@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
+import Spinner from "../components/ui/Spinner";
 
 export default function ResetPassword() {
   const router = useRouter();
@@ -72,10 +73,28 @@ export default function ResetPassword() {
           </p>
         </div>
 
-        {/* --- REFACTORED: Replaced <div> with <Card> component --- */}
         <Card className="p-8 shadow-lg">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && <p className="text-center text-sm text-error">{error}</p>}
+            {/* --- REFACTORED: Enhanced Error Message --- */}
+            {error && (
+              <div className="flex items-center justify-center gap-2 text-sm text-error bg-error/10 p-3 rounded-md">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>{error}</span>
+              </div>
+            )}
             {success && (
               <p className="text-center text-sm text-success">{success}</p>
             )}
@@ -114,13 +133,14 @@ export default function ResetPassword() {
               />
             </div>
 
+            {/* --- REFACTORED: Button with Spinner --- */}
             <Button
               type="submit"
               variant="primary"
               disabled={isLoading}
               className="w-full"
             >
-              {isLoading ? "Resetting..." : "Reset Password"}
+              {isLoading ? <Spinner /> : "Reset Password"}
             </Button>
           </form>
         </Card>

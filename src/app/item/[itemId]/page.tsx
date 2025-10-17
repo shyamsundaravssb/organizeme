@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, FormEvent, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Modal from "@/app/components/Modal";
 import Button from "@/app/components/ui/Button";
 import Card from "@/app/components/ui/Card";
+
+import Spinner from "@/app/components/ui/Spinner";
+import ErrorState from "@/app/components/ui/ErrorState";
+import ItemPageSkeleton from "@/app/components/ui/ItemPageSkeleton";
 
 interface User {
   _id: string;
@@ -33,6 +37,10 @@ export default function ItemDetailPage() {
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
+  // States for modal buttons
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Form states
   const [editedTitle, setEditedTitle] = useState("");
   const [editedDescription, setEditedDescription] = useState("");
@@ -45,34 +53,39 @@ export default function ItemDetailPage() {
   const router = useRouter();
 
   // Data Fetching
-  useEffect(() => {
-    if (!itemId) return;
-    const fetchAllData = async () => {
-      try {
-        const [itemRes, meRes] = await Promise.all([
-          fetch(`/api/items/${itemId}`),
-          fetch("/api/auth/me"),
-        ]);
+  const fetchAllData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [itemRes, meRes] = await Promise.all([
+        fetch(`/api/items/${itemId}`),
+        fetch("/api/auth/me"),
+      ]);
 
-        if (!itemRes.ok) throw new Error("Failed to fetch item data.");
+      if (!itemRes.ok) throw new Error("Failed to fetch item data.");
 
-        const itemData: Item = await itemRes.json();
-        const { user: currentUser } = await meRes.json();
+      const itemData: Item = await itemRes.json();
+      const { user: currentUser } = await meRes.json();
 
-        setItem(itemData);
+      setItem(itemData);
 
-        // Check for ownership
-        if (currentUser && currentUser._id === itemData.owner) {
-          setIsOwner(true);
-        }
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
+      // Check for ownership
+      if (currentUser && currentUser._id === itemData.owner) {
+        setIsOwner(true);
       }
-    };
-    fetchAllData();
-  }, [itemId]);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [itemId]); // 2. Add `itemId` as a dependency
+
+  // 3. The useEffect hook now depends on the memoized function
+  useEffect(() => {
+    if (itemId) {
+      fetchAllData();
+    }
+  }, [fetchAllData, itemId]);
 
   // Handlers
   const handleOpenDetailsModal = () => {
@@ -96,6 +109,7 @@ export default function ItemDetailPage() {
   const handleUpdateItem = async (e: FormEvent) => {
     e.preventDefault();
     if (!item) return;
+    setIsSaving(true);
 
     // This body will now always be complete and valid, regardless of which modal was used
     const payload = {
@@ -120,24 +134,26 @@ export default function ItemDetailPage() {
       setIsNotesModalOpen(false);
     } catch (err: any) {
       alert(`Error: ${err.message}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDeleteItem = async () => {
     if (!item) return;
+    setIsDeleting(true);
     try {
       await fetch(`/api/items/${item._id}`, { method: "DELETE" });
       router.push(`/playlist/${item.parentPlaylist._id}`); // Go back to parent on delete
     } catch (err: any) {
       alert(`Error: ${err.message}`);
+      setIsDeleting(false);
     }
   };
 
-  if (isLoading) return <p className="text-center p-8">Loading item...</p>;
-  if (error)
-    return <p className="text-center p-8 text-error">Error: {error}</p>;
+  if (isLoading) return <ItemPageSkeleton />;
+  if (error) return <ErrorState message={error} onRetry={fetchAllData} />;
   if (!item) return <p className="text-center p-8">Item not found.</p>;
-
   return (
     <div className="container mx-auto p-4 sm:p-8">
       {/* --- REFACTORED: Header and Action Buttons --- */}
@@ -231,8 +247,8 @@ export default function ItemDetailPage() {
                 >
                   Cancel
                 </Button>
-                <Button variant="primary" type="submit">
-                  Save Changes
+                <Button variant="primary" type="submit" disabled={isSaving}>
+                  {isSaving ? <Spinner /> : "Save Changes"}
                 </Button>
               </div>
             </form>
@@ -264,8 +280,8 @@ export default function ItemDetailPage() {
                 >
                   Cancel
                 </Button>
-                <Button variant="primary" type="submit">
-                  Save Notes
+                <Button variant="primary" type="submit" disabled={isSaving}>
+                  {isSaving ? <Spinner /> : "Save Notes"}
                 </Button>
               </div>
             </form>
@@ -289,8 +305,13 @@ export default function ItemDetailPage() {
               >
                 Cancel
               </Button>
-              <Button destructive type="button" onClick={handleDeleteItem}>
-                Yes, Delete
+              <Button
+                destructive
+                type="button"
+                onClick={handleDeleteItem}
+                disabled={isDeleting}
+              >
+                {isDeleting ? <Spinner /> : "Yes, Delete"}
               </Button>
             </div>
           </Modal>

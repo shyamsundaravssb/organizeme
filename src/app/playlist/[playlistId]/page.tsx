@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, FormEvent, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Button from "@/app/components/ui/Button";
 import Modal from "@/app/components/Modal";
 import Link from "next/link";
 import Card from "@/app/components/ui/Card";
+
+import Spinner from "@/app/components/ui/Spinner";
+import ErrorState from "@/app/components/ui/ErrorState";
+import PlaylistPageSkeleton from "@/app/components/ui/PlaylistPageSkeleton";
 
 // Interfaces for our data structures
 interface Item {
@@ -53,49 +57,58 @@ export default function PlaylistPage() {
   // New state to track if the current viewer is the owner
   const [isOwner, setIsOwner] = useState(false);
 
+  // Loading states for various actions
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
   const params = useParams();
   const playlistId = params.playlistId as string;
   const router = useRouter();
 
   // Updated Data Fetching Logic
-  useEffect(() => {
-    if (!playlistId) return;
+  const fetchAllData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Fetch playlist data and current user data concurrently
+      const [playlistRes, meRes] = await Promise.all([
+        fetch(`/api/playlists/${playlistId}`),
+        fetch("/api/auth/me"),
+      ]);
 
-    const fetchAllData = async () => {
-      try {
-        // Fetch playlist data and current user data concurrently
-        const [playlistRes, meRes] = await Promise.all([
-          fetch(`/api/playlists/${playlistId}`),
-          fetch("/api/auth/me"),
-        ]);
+      if (!playlistRes.ok) throw new Error("Failed to fetch playlist data.");
 
-        if (!playlistRes.ok) throw new Error("Failed to fetch playlist data.");
+      const { playlist, subPlaylists, items } = await playlistRes.json();
+      const { user: currentUser } = await meRes.json();
 
-        const { playlist, subPlaylists, items } = await playlistRes.json();
-        const { user: currentUser } = await meRes.json();
+      setPlaylist(playlist);
+      setSubPlaylists(subPlaylists);
+      setItems(items);
 
-        setPlaylist(playlist);
-        setSubPlaylists(subPlaylists);
-        setItems(items);
-
-        // Check for ownership
-        if (currentUser && currentUser._id === playlist.owner._id) {
-          // <-- UPDATED
-          setIsOwner(true);
-        }
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
+      // Check for ownership
+      if (currentUser && currentUser._id === playlist.owner._id) {
+        // <-- UPDATED
+        setIsOwner(true);
       }
-    };
-    fetchAllData();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   }, [playlistId]);
+
+  useEffect(() => {
+    if (playlistId) {
+      fetchAllData();
+    }
+  }, [fetchAllData, playlistId]);
 
   // 2. Handler for creating a new sub-playlist
   // Updated handler to include description
   const handleCreateSubPlaylist = async (e: FormEvent) => {
     e.preventDefault();
+    setIsCreating(true);
     try {
       const response = await fetch(
         `/api/playlists/${playlistId}/subplaylists`,
@@ -116,12 +129,15 @@ export default function PlaylistPage() {
       setNewSubPlaylistDescription(""); // <-- Reset description state
     } catch (err: any) {
       alert(`Error: ${err.message}`);
+    } finally {
+      setIsCreating(false);
     }
   };
 
   // 3. Handler for creating a new item
   const handleCreateItem = async (e: FormEvent) => {
     e.preventDefault();
+    setIsCreating(true);
     try {
       const response = await fetch(`/api/playlists/${playlistId}/items`, {
         method: "POST",
@@ -139,12 +155,15 @@ export default function PlaylistPage() {
       setNewItemDescription("");
     } catch (err: any) {
       alert(`Error: ${err.message}`);
+    } finally {
+      setIsCreating(false);
     }
   };
 
   // 2. Handler for updating the playlist
   const handleUpdatePlaylist = async (e: FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
     try {
       const response = await fetch(`/api/playlists/${playlistId}`, {
         method: "PUT",
@@ -160,6 +179,8 @@ export default function PlaylistPage() {
       setIsEditModalOpen(false);
     } catch (err: any) {
       alert(`Error: ${err.message}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -185,7 +206,7 @@ export default function PlaylistPage() {
   // 4. Handler for deleting the playlist
   const handleDeletePlaylist = async () => {
     if (!playlist) return; // Add a guard clause
-
+    setIsDeleting(true);
     try {
       const response = await fetch(`/api/playlists/${playlistId}`, {
         method: "DELETE",
@@ -202,6 +223,7 @@ export default function PlaylistPage() {
       }
     } catch (err: any) {
       alert(`Error: ${err.message}`);
+      setIsDeleting(false); // Reset on error
     }
   };
 
@@ -228,10 +250,10 @@ export default function PlaylistPage() {
     }
   };
 
-  if (isLoading) return <p className="text-center p-8">Loading playlist...</p>;
-  if (error)
-    return <p className="text-center p-8 text-error">Error: {error}</p>;
+  if (isLoading) return <PlaylistPageSkeleton />;
+  if (error) return <ErrorState message={error} onRetry={fetchAllData} />;
   if (!playlist) return <p className="text-center p-8">Playlist not found.</p>;
+
   return (
     <div className="container mx-auto p-4 sm:p-8">
       {/* --- HEADER --- */}
@@ -410,8 +432,8 @@ export default function PlaylistPage() {
                 >
                   Cancel
                 </Button>
-                <Button variant="primary" type="submit">
-                  Save Changes
+                <Button variant="primary" type="submit" disabled={isSaving}>
+                  {isSaving ? <Spinner /> : "Save Changes"}
                 </Button>
               </div>
             </form>
@@ -436,8 +458,13 @@ export default function PlaylistPage() {
               >
                 Cancel
               </Button>
-              <Button destructive type="button" onClick={handleDeletePlaylist}>
-                Yes, Delete
+              <Button
+                destructive
+                type="button"
+                onClick={handleDeletePlaylist}
+                disabled={isDeleting}
+              >
+                {isDeleting ? <Spinner /> : "Yes, Delete"}
               </Button>
             </div>
           </Modal>
@@ -489,8 +516,8 @@ export default function PlaylistPage() {
                 >
                   Cancel
                 </Button>
-                <Button variant="primary" type="submit">
-                  Create
+                <Button variant="primary" type="submit" disabled={isCreating}>
+                  {isCreating ? <Spinner /> : "Create"}
                 </Button>
               </div>
             </form>
@@ -544,8 +571,8 @@ export default function PlaylistPage() {
                 >
                   Cancel
                 </Button>
-                <Button variant="primary" type="submit">
-                  Create
+                <Button variant="primary" type="submit" disabled={isCreating}>
+                  {isCreating ? <Spinner /> : "Create"}
                 </Button>
               </div>
             </form>

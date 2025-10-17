@@ -4,6 +4,7 @@ import { useState, FormEvent } from "react";
 import Link from "next/link";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
+import Spinner from "../components/ui/Spinner";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -48,7 +49,6 @@ export default function ForgotPassword() {
           </p>
         </div>
 
-        {/* --- REFACTORED: Replaced <div> with <Card> component --- */}
         <Card className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && <p className="text-center text-sm text-error">{error}</p>}
@@ -72,13 +72,14 @@ export default function ForgotPassword() {
                 className="w-full rounded-md border border-border bg-surface px-3 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
+            {/* --- REFACTORED: Button with Spinner --- */}
             <Button
               type="submit"
               variant="primary"
               disabled={isLoading}
               className="w-full"
             >
-              {isLoading ? "Sending..." : "Send Reset Link"}
+              {isLoading ? <Spinner /> : "Send Reset Link"}
             </Button>
           </form>
         </Card>
