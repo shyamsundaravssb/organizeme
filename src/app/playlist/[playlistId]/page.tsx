@@ -320,10 +320,6 @@ export default function PlaylistPage() {
               Delete Playlist
             </Button>
           </Card>
-
-          <div className="my-8 flex flex-wrap gap-4">
-            {/* ... Add buttons ... */}
-          </div>
         </>
       )}
 
@@ -333,6 +329,30 @@ export default function PlaylistPage() {
           Sub-Playlists
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* --- NEW: "Add Sub-Playlist" Card --- */}
+          {isOwner && (
+            <Card
+              as="button"
+              onClick={() => setIsSubPlaylistModalOpen(true)}
+              className="flex flex-col items-center justify-center p-6 bg-surface-secondary hover:bg-border border-2 border-dashed border-border rounded-lg transition-colors text-text-secondary hover:text-text-primary"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-8 w-8 mb-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              <span className="font-semibold">New Sub-Playlist</span>
+            </Card>
+          )}
           {subPlaylists.length > 0 ? (
             subPlaylists.map((sub) => (
               <Card
@@ -349,7 +369,9 @@ export default function PlaylistPage() {
               </Card>
             ))
           ) : (
-            <p className="text-text-secondary">No sub-playlists yet.</p>
+            <p className="text-text-secondary text-center pt-8">
+              No sub-playlists yet. Click '+' to add one.
+            </p>
           )}
         </div>
       </div>
@@ -360,6 +382,31 @@ export default function PlaylistPage() {
           Items
         </h2>
         <div className="space-y-4">
+          {/* --- NEW: "Add Item" Card --- */}
+          {isOwner && (
+            <Card
+              as="button"
+              onClick={() => setIsItemModalOpen(true)}
+              className="flex items-center justify-center p-4 bg-surface-secondary hover:bg-border border-2 border-dashed border-border rounded-lg transition-colors text-text-secondary hover:text-text-primary w-full"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              <span className="font-semibold">New Item</span>
+            </Card>
+          )}
+
           {items.length > 0 ? (
             items.map((item) => (
               <Card
@@ -377,7 +424,9 @@ export default function PlaylistPage() {
               </Card>
             ))
           ) : (
-            <p className="text-text-secondary">No items yet.</p>
+            <p className="text-text-secondary text-center pt-8">
+              No items yet. Click '+' to add one.
+            </p>
           )}
         </div>
       </div>
