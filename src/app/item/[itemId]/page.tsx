@@ -10,6 +10,8 @@ import Spinner from "@/app/components/ui/Spinner";
 import ErrorState from "@/app/components/ui/ErrorState";
 import ItemPageSkeleton from "@/app/components/ui/ItemPageSkeleton";
 
+import RichTextEditor from "@/app/components/ui/RichTextEditor"; // 1. Import the new component
+
 interface User {
   _id: string;
 }
@@ -190,9 +192,14 @@ export default function ItemDetailPage() {
           <h2 className="text-2xl font-semibold mb-4 text-text-primary">
             Notes
           </h2>
-          <div className="prose prose-lg max-w-none text-text-secondary">
-            <p>{item.notes || "No notes have been added yet."}</p>
-          </div>
+          <div
+            className="prose max-w-none text-text-secondary" // Apply prose class
+            dangerouslySetInnerHTML={{
+              __html:
+                item.notes ||
+                '<p class="italic text-text-muted">No notes have been added yet.</p>',
+            }}
+          />
         </div>
       </Card>
 
@@ -266,11 +273,11 @@ export default function ItemDetailPage() {
               onSubmit={handleUpdateItem}
               className="flex flex-col flex-grow min-h-0"
             >
-              <textarea
-                value={editedNotes}
-                onChange={(e) => setEditedNotes(e.target.value)}
-                className="w-full p-3 border border-border rounded-md flex-grow resize-none bg-surface-secondary"
-                placeholder="Start writing your notes here..."
+              {/* --- 3. Replace textarea with RichTextEditor --- */}
+              <RichTextEditor
+                content={editedNotes}
+                onChange={setEditedNotes}
+                className="flex-grow min-h-0" // Ensure it takes up available space
               />
               <div className="flex justify-end gap-4 mt-4 flex-shrink-0">
                 <Button

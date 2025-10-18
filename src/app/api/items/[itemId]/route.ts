@@ -4,6 +4,10 @@ import Item, { IItem } from "@/models/Item";
 import Playlist, { IPlaylist } from "@/models/Playlist";
 import { getAuthenticatedUser } from "@/lib/getAuthenticatedUser";
 
+// Import sanitization libraries
+import DOMPurify from "dompurify";
+import { JSDOM } from "jsdom";
+
 // GET: Fetch a single item, handling public/private access
 export async function GET(
   request: NextRequest,
@@ -54,8 +58,8 @@ export async function PUT(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { itemId } = await params;
-    const { title, description, notes } = await request.json();
+    const { itemId } = params;
+    const { title, description, notes } = await request.json(); // Get notes from request
 
     if (!title || !description) {
       return NextResponse.json(
@@ -64,10 +68,21 @@ export async function PUT(
       );
     }
 
-    // First, update the item
+    // --- ADDED: Sanitize the 'notes' HTML ---
+    // Create a JSDOM window to mimic a browser environment for DOMPurify
+    const window = new JSDOM("").window;
+    const purify = DOMPurify(window as any); // Use 'as any' to satisfy TS types if needed
+
+    // Sanitize the notes content. Allow basic formatting tags.
+    const cleanNotes = purify.sanitize(notes || "", {
+      USE_PROFILES: { html: true }, // Allows common safe HTML elements (p, strong, em, ul, ol, li, a[href])
+    });
+    // --- END OF ADDED SECTION ---
+
+    // Update the item using the CLEANED notes
     const updatedItem = await Item.findOneAndUpdate(
       { _id: itemId, owner: user._id },
-      { title, description, notes },
+      { title, description, notes: cleanNotes }, // <-- Use sanitized notes
       { new: true }
     );
 
@@ -78,16 +93,15 @@ export async function PUT(
       );
     }
 
-    // Now, find the updated item again to populate its parentPlaylist field
+    // Populate and return the updated item (as before)
     const populatedItem = await Item.findById(updatedItem._id).populate<{
       parentPlaylist: IPlaylist;
     }>("parentPlaylist");
-
-    // Return the fully populated item
     return NextResponse.json(populatedItem, { status: 200 });
   } catch (error) {
+    console.error("Error updating item:", error); // Log the error for debugging
     return NextResponse.json(
-      { message: "Error updating item", error },
+      { message: "Error updating item", error: (error as Error).message },
       { status: 500 }
     );
   }
